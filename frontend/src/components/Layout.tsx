@@ -23,7 +23,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             <span className="w-8 h-8 rounded-lg bg-brand-600 text-white grid place-items-center">
               🎓
             </span>
-            Beyond Education
+            Bahraini 28
           </Link>
           <div className="flex items-center gap-3">
             <NavLink to="/directory" className={navLink}>
@@ -56,7 +56,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
 
       <footer className="border-t border-slate-200">
         <div className="max-w-6xl mx-auto px-4 py-6 text-sm text-slate-500 flex flex-wrap gap-4 justify-between">
-          <span>© Beyond Education · bahraini28.com</span>
+          <span>© Bahraini 28 · bahraini28.com</span>
           <span>Volunteer discount tracking portal</span>
         </div>
       </footer>

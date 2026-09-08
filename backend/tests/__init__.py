@@ -1,1 +1,1 @@
-"""Test package for the Beyond Education backend."""
+"""Test package for the Bahraini 28 backend."""

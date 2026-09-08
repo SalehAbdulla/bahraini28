@@ -1,4 +1,4 @@
-"""ORM models for the Beyond Education portal."""
+"""ORM models for the Bahraini 28 portal."""
 from app.models.admin import Admin
 from app.models.area import Area, BusinessArea
 from app.models.business import Business

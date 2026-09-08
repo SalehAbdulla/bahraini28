@@ -1,4 +1,4 @@
-# --- Beyond Education backend runtime dependencies -------------------------
+# --- Bahraini 28 backend runtime dependencies -------------------------
 # Generated for Python 3.14. Version minima are intentionally loose so pip can
 # resolve the latest compatible releases.
 

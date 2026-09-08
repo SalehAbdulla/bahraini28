@@ -1,6 +1,6 @@
-# Beyond Education — Discount Tracking Portal
+# Bahraini 28 — Discount Tracking Portal
 
-**Project Name & Vision**: Beyond Education (Discount Tracking Portal for Volunteer Organization). A lightweight, high-performance web platform designed to digitize and track exclusive member discounts at physical merchant locations.
+**Project Name & Vision**: Bahraini 28 (Discount Tracking Portal for the Bahraini 28 Volunteer Organization). A lightweight, high-performance web platform designed to digitize and track exclusive member discounts at physical merchant locations.
 
 ---
 

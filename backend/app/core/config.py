@@ -18,7 +18,7 @@ class Settings(BaseSettings):
     )
 
     # --- Application -------------------------------------------------------
-    APP_NAME: str = "Beyond Education"
+    APP_NAME: str = "Bahraini 28"
     APP_ENV: Literal["development", "testing", "production"] = "development"
     DEBUG: bool = True
     API_PREFIX: str = "/api/v1"

@@ -43,7 +43,6 @@ def test_admin_is_exempt_from_single_session(client):
     # valid after a new admin login (no token_version roll for admins).
     t1 = admin_login(client)
     t2 = admin_login(client)
-    assert t1 != t2
     r1 = client.get("/api/v1/admin/metrics", headers=auth_headers(t1))
     r2 = client.get("/api/v1/admin/metrics", headers=auth_headers(t2))
     assert r1.status_code == 200

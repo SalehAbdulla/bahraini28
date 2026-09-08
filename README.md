@@ -1,10 +1,10 @@
-# Beyond Education · bahraini28.com
+# Bahraini 28 · bahraini28.com
 
-A lightweight, high-performance **discount tracking portal** for a volunteer
-organization. Volunteers browse discounted merchants across Bahrain, submit
-physical-store invoice numbers after purchase, and accumulate shared reward
-points — while administrators manage users, override expiries/rewards, and
-watch purchases arrive in real time.
+A lightweight, high-performance **discount tracking portal** for the **Bahraini
+28 volunteer organization**. Volunteers browse discounted merchants across
+Bahrain, submit physical-store invoice numbers after purchase, and accumulate
+shared reward points — while administrators manage users, override
+expiries/rewards, and watch purchases arrive in real time.
 
 Monorepo with two independent components:
 
