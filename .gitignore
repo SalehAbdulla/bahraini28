@@ -1,0 +1,39 @@
+# --- Environment & secrets -------------------------------------------------
+.env
+*.env.local
+
+# --- Python -----------------------------------------------------------------
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# --- Database -----------------------------------------------------------------
+*.db
+*.sqlite3
+
+# --- Backend uploads ----------------------------------------------------------
+backend/uploads/*
+!backend/uploads/.gitkeep
+
+# --- Node.js / Vite -----------------------------------------------------------
+node_modules/
+frontend/dist/
+frontend/.vite/
+*.local
+
+# --- OS / editor ------------------------------------------------------------
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+
+# --- Original source assets (tracking not desired) ----------------------------
+Fonts.zip
+Bahraini 28 3.pdf

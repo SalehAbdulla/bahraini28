@@ -1,0 +1,1 @@
+"""Pydantic schemas (payload validation & response serialization)."""

@@ -1,0 +1,17 @@
+# --- Beyond Education backend runtime dependencies -------------------------
+# Generated for Python 3.14. Version minima are intentionally loose so pip can
+# resolve the latest compatible releases.
+
+fastapi>=0.115
+uvicorn[standard]>=0.32
+sqlalchemy>=2.0.36
+pydantic>=2.10
+pydantic-settings>=2.7
+# Actively-maintained password hashing (passlib is unmaintained).
+bcrypt>=4.3
+# Actively-maintained JWT library (python-jose has known CVEs).
+PyJWT>=2.10
+# PostgreSQL driver (production database of choice).
+psycopg[binary]>=3.2
+email-validator>=2.2
+python-multipart>=0.0.19
