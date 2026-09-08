@@ -34,12 +34,14 @@ export function clearTokens(): void {
 export class RequestError extends Error implements ApiError {
   status: number;
   code?: string;
+  detail: string;
 
   constructor(message: string, status: number, code?: string) {
     super(message);
     this.name = "RequestError";
     this.status = status;
     this.code = code;
+    this.detail = message;
   }
 }
 
