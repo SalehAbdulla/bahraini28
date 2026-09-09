@@ -104,11 +104,24 @@ def test_admin_registers_business(browser, app_url: str) -> None:
     page.get_by_label("Commercial registration").fill(f"CR-E2E-{stamp}")
     page.get_by_label("Category").select_option(index=1)
     page.get_by_label("Discount %").fill("12")
+    # Attach a tiny PNG as the logo.
+    page.set_input_files(
+        "#biz-logo",
+        files=[
+            {
+                "name": "logo.png",
+                "mimeType": "image/png",
+                "buffer": b"\x89PNG\r\n\x1a\n" + b"\x00" * 1024,
+            }
+        ],
+    )
     page.locator("button:has-text('Save business')").click()
 
     # --- the new partnership appears in the management table -----------------
     expect(page.get_by_text(f"E2E Store {stamp}")).to_be_visible(timeout=10000)
     expect(page.get_by_text(f"CR-E2E-{stamp}")).to_be_visible()
+    # ... with its uploaded logo rendered.
+    expect(page.locator(f"tr:has-text('E2E Store {stamp}') img")).to_be_visible()
     context.close()
 
 

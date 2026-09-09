@@ -7,6 +7,13 @@ export default function BusinessCard({ business }: { business: BusinessSummary }
       to={`/businesses/${business.id}`}
       className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm hover:shadow-md transition flex flex-col gap-2"
     >
+      {business.logo_url && (
+        <img
+          src={business.logo_url}
+          alt={business.name}
+          className="h-12 w-12 object-contain rounded-lg border border-slate-100"
+        />
+      )}
       <div className="flex items-center justify-between">
         <span className="text-xs font-semibold uppercase tracking-wide text-brand-600">
           {business.category_name ?? "Partner"}

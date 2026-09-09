@@ -78,11 +78,20 @@ export default function BusinessDetail() {
     <div className="max-w-4xl">
       <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm">
         <div className="flex items-center justify-between gap-4 flex-wrap">
-          <div>
-            <h1 className="text-3xl font-extrabold text-slate-900">{business.name}</h1>
-            <p className="mt-1 text-sm text-slate-500">
-              {business.category_name} · CR {business.commercial_registration}
-            </p>
+          <div className="flex items-center gap-4">
+            {business.logo_url && (
+              <img
+                src={business.logo_url}
+                alt={business.name}
+                className="h-16 w-16 object-contain rounded-lg border border-slate-200"
+              />
+            )}
+            <div>
+              <h1 className="text-3xl font-extrabold text-slate-900">{business.name}</h1>
+              <p className="mt-1 text-sm text-slate-500">
+                {business.category_name} · CR {business.commercial_registration}
+              </p>
+            </div>
           </div>
           <span className="inline-block text-sm font-semibold rounded-full px-3 py-1 bg-brand-100 text-brand-700">
             -{business.discount_percentage}% discount

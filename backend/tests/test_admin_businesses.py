@@ -154,3 +154,58 @@ def test_user_token_cannot_manage_businesses(client, db):
     headers = auth_headers(user_token)
     assert client.post("/api/v1/admin/businesses", headers=headers, json=_payload(1)).status_code in (401, 403)
     assert client.get("/api/v1/admin/businesses", headers=headers).status_code in (401, 403)
+
+
+def test_admin_upload_business_logo(client, db):
+    bz = make_business(db, name="Logo Co", cr="CR-LOGO1")
+    res = client.post(
+        f"/api/v1/admin/businesses/{bz.id}/logo",
+        headers=_auth(client),
+        files={"file": ("logo.png", b"\x89PNG\r\n\x1a\n" + b"\x00" * 64, "image/png")},
+    )
+    assert res.status_code == 200, res.text
+    assert res.json()["logo_url"].startswith("/uploads/")
+
+    # Uploading again replaces the file (still a single logo_url, no error).
+    res2 = client.post(
+        f"/api/v1/admin/businesses/{bz.id}/logo",
+        headers=_auth(client),
+        files={"file": ("new.png", b"\x89PNG\r\n\x1a\n" + b"\x01" * 64, "image/png")},
+    )
+    assert res2.status_code == 200
+    assert res2.json()["logo_url"].startswith("/uploads/")
+    assert res2.json()["logo_url"] != res.json()["logo_url"]
+
+
+def test_admin_upload_logo_rejects_unsupported_type(client, db):
+    bz = make_business(db, cr="CR-LOGO2")
+    res = client.post(
+        f"/api/v1/admin/businesses/{bz.id}/logo",
+        headers=_auth(client),
+        files={"file": ("note.txt", b"plain text, not an image", "text/plain")},
+    )
+    assert res.status_code == 400
+    assert res.json()["code"] == "unsupported_file_type"
+
+
+def test_admin_upload_logo_rejects_oversized_file(client, db):
+    bz = make_business(db, cr="CR-LOGO3")
+    res = client.post(
+        f"/api/v1/admin/businesses/{bz.id}/logo",
+        headers=_auth(client),
+        files={"file": ("big.png", b"\xff" * (3 * 1024 * 1024), "image/png")},
+    )
+    assert res.status_code == 413
+    assert res.json()["code"] == "file_too_large"
+
+
+def test_user_token_cannot_upload_logo(client, db):
+    bz = make_business(db, cr="CR-LOGO4")
+    make_user(db, email="uploader@example.com", password="pass12345", must_change_password=False)
+    user_token = login(client, "uploader@example.com", "pass12345")
+    res = client.post(
+        f"/api/v1/admin/businesses/{bz.id}/logo",
+        headers=auth_headers(user_token),
+        files={"file": ("logo.png", b"png", "image/png")},
+    )
+    assert res.status_code in (401, 403)

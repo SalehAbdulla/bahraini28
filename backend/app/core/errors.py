@@ -116,6 +116,18 @@ class AreaNotFoundError(AppError):
     message = "One or more selected areas do not exist."
 
 
+class UnsupportedFileTypeError(AppError):
+    status_code = 400
+    code = "unsupported_file_type"
+    message = "Unsupported file type. Use PNG, JPEG, GIF or WebP."
+
+
+class FileTooLargeError(AppError):
+    status_code = 413
+    code = "file_too_large"
+    message = "The uploaded file is too large."
+
+
 class BusinessInactiveError(AppError):
     status_code = 403
     code = "business_inactive"

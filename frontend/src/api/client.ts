@@ -92,3 +92,45 @@ export async function api<T>(path: string, opts: ApiOptions = {}): Promise<T> {
 
   return data as T;
 }
+
+/**
+ * Multipart upload helper (used for business logos). The browser sets the
+ * multipart boundary, so no Content-Type header is manually attached.
+ */
+export async function apiUpload<T>(
+  path: string,
+  file: File,
+  opts: { admin?: boolean; auth?: boolean } = {}
+): Promise<T> {
+  const headers: Record<string, string> = {};
+  const token = opts.admin ? getAdminToken() : getUserToken();
+  if (opts.auth !== false && token) {
+    headers["Authorization"] = `Bearer ${token}`;
+  }
+  const form = new FormData();
+  form.append("file", file);
+
+  const res = await fetch(`${API_URL}${path}`, {
+    method: "POST",
+    headers,
+    body: form,
+  });
+
+  if (!res.ok) {
+    const text = await res.text();
+    let detail = `Request failed (${res.status})`;
+    let code: string | undefined;
+    try {
+      const data = JSON.parse(text) as { detail?: string; code?: string } | null;
+      detail = data?.detail ?? detail;
+      code = data?.code;
+    } catch {
+      /* non-JSON error body — keep default */
+    }
+    if (res.status === 401 && !opts.admin) {
+      setUserToken(null);
+    }
+    throw new RequestError(detail, res.status, code);
+  }
+  return res.json() as T;
+}

@@ -1,11 +1,15 @@
-"""Admin control-center routes: user management, analytics, ledger."""
+"""Admin control-center routes: user management, analytics, ledger, businesses."""
 from __future__ import annotations
 
 import math
+import uuid
+from pathlib import Path
 
-from fastapi import APIRouter, Query
+from fastapi import APIRouter, File, Query, UploadFile
 
 from app.api.deps import CurrentAdmin, DbSession
+from app.core.config import get_settings
+from app.core.errors import FileTooLargeError, UnsupportedFileTypeError
 from app.models import Business, User
 from app.schemas.admin import (
     AdminCreateRequest,
@@ -337,4 +341,53 @@ def update_business(
     business = business_service.get_business_or_404(db, business_id)
     changes = payload.model_dump(exclude_unset=True)
     business_service.update_business(db, business, changes)
+    return _admin_business_out(business_service.get_business_full(db, business_id))
+
+
+_ALLOWED_LOGO_TYPES = {
+    "image/png": ".png",
+    "image/jpeg": ".jpg",
+    "image/gif": ".gif",
+    "image/webp": ".webp",
+}
+
+
+@router.post("/businesses/{business_id}/logo", response_model=AdminBusinessOut)
+async def upload_business_logo(
+    business_id: int,
+    file: UploadFile = File(...),
+    db: DbSession = None,  # type: ignore[assignment]
+    admin: CurrentAdmin = None,  # type: ignore[assignment]
+):
+    """Upload/replace a business logo (PNG/JPEG/GIF/WebP, size limited by
+    ``MAX_UPLOAD_SIZE_MB``). The previous logo file is removed so old uploads
+    don't accumulate. Files land in ``UPLOAD_DIR`` and are served at /uploads.
+    """
+    business = business_service.get_business_or_404(db, business_id)
+    settings = get_settings()
+
+    ext = _ALLOWED_LOGO_TYPES.get((file.content_type or "").lower())
+    if ext is None:
+        raise UnsupportedFileTypeError
+
+    max_bytes = settings.MAX_UPLOAD_SIZE_MB * 1024 * 1024
+    payload = await file.read(max_bytes + 1)
+    if len(payload) > max_bytes:
+        raise FileTooLargeError(
+            message=f"Logo exceeds the {settings.MAX_UPLOAD_SIZE_MB} MB limit."
+        )
+
+    upload_dir = Path(settings.UPLOAD_DIR)
+    upload_dir.mkdir(parents=True, exist_ok=True)
+    filename = f"b{business_id}-{uuid.uuid4().hex[:12]}{ext}"
+    (upload_dir / filename).write_bytes(payload)
+
+    if business.logo_path:
+        old = upload_dir / Path(business.logo_path).name
+        if old.exists():
+            old.unlink()
+
+    business.logo_path = f"/uploads/{filename}"
+    db.commit()
+    db.expire(business)
     return _admin_business_out(business_service.get_business_full(db, business_id))

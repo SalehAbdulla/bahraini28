@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState, type FormEvent } from "react";
 import { Link } from "react-router-dom";
-import { api } from "../api/client";
+import { api, apiUpload } from "../api/client";
 import Pagination from "../components/Pagination";
 import { fmtDateOnly } from "./BusinessDetail";
 import type { AdminBusinessOut, AreaOut, CategoryOut, Page } from "../types";
@@ -21,6 +21,8 @@ interface BizFormState {
   description: string;
   expiry: string;
   is_active: boolean;
+  logo: File | null;
+  logo_url: string | null;
   branches: BranchRow[];
 }
 
@@ -42,6 +44,8 @@ function newForm(): BizFormState {
     description: "",
     expiry: toLocalInput(new Date(Date.now() + 365 * 864e5)),
     is_active: true,
+    logo: null,
+    logo_url: null,
     branches: [],
   };
 }
@@ -103,6 +107,8 @@ export default function AdminBusinesses() {
       description: b.description ?? "",
       expiry: toLocalInput(b.expiry_date),
       is_active: b.is_active,
+      logo: null,
+      logo_url: b.logo_url,
       branches: b.branches.map((br) => ({
         area_id: br.area_id,
         branch_name: br.branch_name ?? "",
@@ -158,10 +164,19 @@ export default function AdminBusinesses() {
     };
     setSaving(true);
     try {
+      let savedId = form.id;
       if (form.id) {
         await api(`/admin/businesses/${form.id}`, { method: "PUT", admin: true, body });
       } else {
-        await api("/admin/businesses", { method: "POST", admin: true, body });
+        const created = await api<AdminBusinessOut>("/admin/businesses", {
+          method: "POST",
+          admin: true,
+          body,
+        });
+        savedId = created.id;
+      }
+      if (form.logo && savedId !== null) {
+        await apiUpload(`/admin/businesses/${savedId}/logo`, form.logo, { admin: true });
       }
       setModalOpen(false);
       await load(1);
@@ -233,8 +248,15 @@ export default function AdminBusinesses() {
               {items.map((b) => (
                 <tr key={b.id} className="border-t border-slate-100">
                   <td className="px-4 py-2">
-                    <div className="font-medium text-slate-900">{b.name}</div>
-                    <div className="text-xs text-slate-400">CR {b.commercial_registration}</div>
+                    <div className="flex items-center gap-3">
+                      {b.logo_url && (
+                        <img src={b.logo_url} alt="" className="h-9 w-9 object-contain rounded-md border border-slate-200" />
+                      )}
+                      <div>
+                        <div className="font-medium text-slate-900">{b.name}</div>
+                        <div className="text-xs text-slate-400">CR {b.commercial_registration}</div>
+                      </div>
+                    </div>
                   </td>
                   <td className="px-4 py-2">{b.category_name ?? "—"}</td>
                   <td className="px-4 py-2 font-semibold text-brand-700">-{b.discount_percentage}%</td>
@@ -312,6 +334,24 @@ export default function AdminBusinesses() {
                 <div className="sm:col-span-2 flex items-center gap-2">
                   <input id="biz-active" type="checkbox" checked={form.is_active} onChange={(e) => setForm((f) => ({ ...f, is_active: e.target.checked }))} />
                   <label htmlFor="biz-active" className="text-sm font-medium text-slate-700">Active partnership</label>
+                </div>
+                <div className="sm:col-span-2">
+                  <label htmlFor="biz-logo" className="block text-sm font-medium text-slate-700">Logo (optional)</label>
+                  <div className="mt-1 flex items-center gap-4">
+                    <input
+                      id="biz-logo"
+                      type="file"
+                      accept="image/png,image/jpeg,image/gif,image/webp"
+                      onChange={(e) => setForm((f) => ({ ...f, logo: e.target.files?.[0] ?? null }))}
+                    />
+                    {(form.logo || form.logo_url) && (
+                      <img
+                        src={form.logo ? URL.createObjectURL(form.logo) : (form.logo_url ?? undefined)}
+                        alt="logo preview"
+                        className="h-12 w-12 object-contain rounded-lg border border-slate-200"
+                      />
+                    )}
+                  </div>
                 </div>
               </div>
 
