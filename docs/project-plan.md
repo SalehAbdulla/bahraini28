@@ -40,30 +40,31 @@ Seamlessly bridges physical retail interactions with digital accountability, ens
 
 ## Project Implementation Todo List
 
-### Phase 1: Project Setup & Database Models
-- [ ] Initialize FastAPI project structure with virtual environment and dependencies (`fastapi`, `uvicorn`, `sqlalchemy`, `pydantic`, `passlib[bcrypt]`, `python-jose`).
-- [ ] Configure SQLAlchemy database engine and session management.
-- [ ] Build database models: `Admin`, `User` (CPR, email, password_hash, expiry_date, first_login flag, token_version), `Business` (name, CR, logo_path, discount_percentage, expiry_date), `BusinessArea` (relationship table for multi-branch locations), and `Transaction` (user_id, business_id, invoice_number, timestamp, reward_increment).
+### Phase 1: Project Setup & Database Models — ✅ done
+- [x] Initialize FastAPI project structure with virtual environment and dependencies (`fastapi`, `uvicorn`, `sqlalchemy`, `pydantic`). Note: **bcrypt** and **PyJWT** were used instead of `passlib[bcrypt]`/`python-jose` (both unmaintained / have CVEs).
+- [x] Configure SQLAlchemy database engine and session management (SQLite for dev, PostgreSQL for prod; `pool_pre_ping`).
+- [x] Build database models: `Admin`, `User` (CPR, email, password_hash, expiry_date, first_login flag, token_version), `Business` (name, CR, logo_path, discount_percentage, expiry_date), `BusinessArea` (relationship table for multi-branch locations), `Transaction` (user_id, business_id, invoice_number, timestamp, reward_increment), plus `Category`, `Area`, `RewardAdjustment` (audit log).
 
-### Phase 2: Authentication, Security & Middleware
-- [ ] Implement secure password hashing utility using `passlib.bcrypt`.
-- [ ] Create JWT token generation and validation dependencies with single-session tracking (`token_version` check).
-- [ ] Build login endpoints for Users (supporting CPR or Email lookup, expiry date validation, and temporary password detection) and Admins.
-- [ ] Implement profile-activation middleware/endpoint to force first-time users to update their name, email, and password.
+### Phase 2: Authentication, Security & Middleware — ✅ done
+- [x] Implement secure password hashing utility using `bcrypt` (pyca).
+- [x] Create JWT token generation and validation dependencies with single-session tracking (`token_version` check).
+- [x] Build login endpoints for Users (supporting CPR or Email lookup, expiry date validation, and temporary password detection) and Admins.
+- [x] Implement profile-activation middleware/endpoint to force first-time users to update their name, email, and password.
 
-### Phase 3: Admin Dashboard & Management APIs
-- [ ] Develop Admin user-management endpoints (Add, Modify, Deactivate users, override expiry dates, and manual reward adjustments).
-- [ ] Build detailed user analytics query (transaction history, aggregate metrics, most-frequented business).
-- [ ] Implement master transaction log endpoint with pagination and real-time notification hooks.
+### Phase 3: Admin Dashboard & Management APIs — ✅ done
+- [x] Develop Admin user-management endpoints (Add, Modify, Deactivate users, override expiry dates, and manual reward adjustments).
+- [x] Build detailed user analytics query (transaction history, aggregate metrics, most-frequented business).
+- [x] Implement master transaction log endpoint with pagination and real-time notification hooks (SSE admin feed).
 
-### Phase 4: Business Directory & User Interface
-- [ ] Create public landing page, login page (with "Volunteer Members Only" notice), and categorized business directory home page.
-- [ ] Build individual business component view displaying logo, discount %, branch areas, and invoice submission form.
-- [ ] Develop user profile view featuring member details, reward tracking cards, and transaction history.
+### Phase 4: Business Directory & User Interface — ✅ done
+- [x] Create public landing page, login page (with "Volunteer Members Only" notice), and categorized business directory home page.
+- [x] Build individual business component view displaying logo, discount %, branch areas, and invoice submission form.
+- [x] Develop user profile view featuring member details, reward tracking cards, and transaction history.
 
-### Phase 5: Frontend Polish & Testing
-- [ ] Style all views using Tailwind CSS for clean, minimalist, mobile-friendly UX.
-- [ ] Write integration tests for authentication flows, expiry checks, single-session token invalidation, and invoice reward increments.
+### Phase 5: Frontend Polish & Testing — ✅ done
+- [x] Style all views using Tailwind CSS for clean, minimalist, mobile-friendly UX.
+- [x] Write integration tests for authentication flows, expiry checks, single-session token invalidation, and invoice reward increments (44 backend tests, SQLite + PostgreSQL via `TEST_DATABASE_URL`).
+- [x] Playwright E2E suite under `e2e/`: volunteer journey (login → first-login modal → directory → invoice → profile reward) and admin dashboard SSE live feed.
 
 ---
 
@@ -86,8 +87,33 @@ Seamlessly bridges physical retail interactions with digital accountability, ens
 ## Todo List Update for Programming This Feature
 
 **Phase 1 & 2 (Database & Registration):**
-- [ ] Add a condition in the transactions table to verify the number of times a business has been used, ensuring that it only counts purchases made **within the current calendar day**.
+- [x] Add a condition in the transactions table to verify the number of times a business has been used, ensuring that it only counts purchases made **within the current calendar day** (derived from `Asia/Bahrain` day start, no background job).
 
 **Phase 3 & 4 (Business Page & Verification):**
-- [ ] Program the verification system when a volunteer enters an invoice number: if they have reached 3 successful attempts at the same business during the same day, display a notice stating that the daily limit for this business has been exhausted, while still allowing purchases from other businesses.
-- [ ] Ensure the system automatically resets the counter at the start of every new day.
+- [x] Program the verification system when a volunteer enters an invoice number: if they have reached 3 successful attempts at the same business during the same day, display a notice stating that the daily limit for this business has been exhausted, while still allowing purchases from other businesses (`DAILY_LIMIT_PER_BUSINESS` configurable).
+- [x] Ensure the system automatically resets the counter at the start of every new day.
+
+---
+
+## Production Deployment
+
+Target: **Oracle Cloud Always Free** (Ampere A1 ARM, Ubuntu 24.04, ≥2 GB RAM)
+or any Docker host. Full artifacts in `deploy/`, run guide in `README.md`:
+
+- `deploy/docker-compose.yml` — PostgreSQL 17 (named volume `pgdata`),
+  FastAPI backend (uploads volume, single uvicorn worker for the in-process
+  SSE bus), one-shot frontend builder, **Caddy** (auto-renewing TLS, serves
+  SPA, proxies `/api`, `/uploads`, `/health`).
+- `deploy/deploy.sh` — one-command deploy + smoke path; `backup.sh` /
+  `restore.sh` — daily `pg_dump` + uploads archive with 14-day retention.
+- `deploy/.env.production.example` — production env template (DB credentials,
+  secret keys, CORS for https://bahraini28.com). `backend/.env.example` — local.
+- CI (`.github/workflows/ci.yml`) runs the backend suite on SQLite **and**
+  PostgreSQL 17 plus the frontend build.
+- `backend/scripts/migrate_sqlite_to_postgres.py` — idempotent data migration.
+- DNS (Namecheap): `A @` and `A www` → VPS IP; CAA `0 issue "letsencrypt.org"`.
+
+**Remaining operational checklist (after the VPS + DNS are live):**
+- [ ] Change the bootstrap admin password and set `SEED_DEFAULT_ADMIN=false`.
+- [ ] Verify `https://bahraini28.com` SPA, `/api/v1` health, and the SSE feed.
+- [ ] Install the daily backup cron entry (`deploy/backup-cron.txt`) and test one restore.

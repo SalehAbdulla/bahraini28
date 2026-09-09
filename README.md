@@ -69,7 +69,14 @@ Default bootstrapped admin (change in production via `.env`):
 
 ```bash
 cd backend
-pytest                                   # 44 tests
+pytest                                   # 44 tests (in-memory SQLite)
+```
+
+Re-run the exact same suite against a real PostgreSQL server (used by CI):
+
+```bash
+cd backend
+TEST_DATABASE_URL=postgresql+psycopg://user:pass@host:5432/bahraini28_test pytest
 ```
 
 Run against PostgreSQL in production by setting
@@ -87,7 +94,9 @@ npm run build      # type-check + production build
 ```
 
 `vite.config.ts` proxies `/api` and `/uploads` to `http://localhost:8000`, so
-local development needs the backend running alongside the dev server.
+local development needs the backend running alongside the dev server. The SPA
+defaults to the same-origin API base `/api/v1` (override via `VITE_API_URL`),
+so the dev proxy and the production reverse proxy need no extra config.
 
 ### Pages
 
@@ -101,17 +110,59 @@ local development needs the backend running alongside the dev server.
 
 ---
 
-## Deployment sketch
+## Production deployment (Docker Compose + Caddy)
 
-- Backend: `uvicorn app.main:app` behind a reverse proxy (nginx/Caddy) with
-  HTTPS; set a strong `SECRET_KEY`, `CORS_ORIGINS` to the frontend origin,
-  and connect PostgreSQL.
-- Frontend: `npm run build` → serve the `dist/` directory statically
-  (or from the same origin as the API to skip CORS).
-- `bahraini28.com` (Namecheap) → DNS A records to the host; TLS via
-  Let's Encrypt.
-- The SSE notification token passes via `?token=` (needed because browser
-  `EventSource` cannot set headers) — keep the admin token short-lived and
-  serve behind HTTPS.
+Everything needed to run on a single VPS (e.g. an Oracle Cloud **Always Free**
+Arm VM — Ubuntu 24.04, ≥2 GB RAM — or any Docker host) lives in `deploy/`:
+
+**Stack:** `postgres:17-alpine` (named volume `pgdata`) · FastAPI backend
+(`/data/uploads` persistent volume for business logos) · one-shot frontend
+builder (compiles `dist/` into a shared volume) · **Caddy** (automatic
+renewing Let's Encrypt TLS, serves the SPA, proxies `/api`, `/uploads`,
+`/health`).
+
+```bash
+git clone https://github.com/SalehAbdulla/bahraini28.git /opt/bahraini28
+cd /opt/bahraini28
+./deploy/deploy.sh      # one command: tests (if venv) → secrets → build → up → smoke
+```
+
+First boot creates the bootstrap admin (`admin` / password from `deploy/.env`).
+**Change that password immediately, then set `SEED_DEFAULT_ADMIN=false`** so the
+bootstrap account can't be recreated. Optional demo data:
+
+```bash
+docker compose -f deploy/docker-compose.yml run --rm backend python scripts/seed.py
+```
+
+Operational notes:
+
+- **One uvicorn worker on purpose**: the SSE admin feed uses an in-process
+  pub/sub bus. Swap it for Redis pub/sub (same API surface) before scaling.
+- **Backups**: `deploy/backup.sh` — daily `pg_dump` (custom format) + uploads
+  archive with 14-day retention; cron entry in `deploy/backup-cron.txt`.
+  Restore with `deploy/restore.sh <backup.pgdump>`.
+- **SQLite → Postgres migration**: `backend/scripts/migrate_sqlite_to_postgres.py`
+  (idempotent; re-syncs autoincrement sequences).
+- **CI** (`.github/workflows/ci.yml`): backend suite on SQLite **and**
+  PostgreSQL 17, plus the frontend type-check + build.
+
+### DNS (Namecheap) → TLS
+
+Create `A` records for `@` and `www` pointing at the VPS public IP, then
+Caddy issues and auto-renews certificates automatically — the SPA is served
+at `https://bahraini28.com/` and the API at `/api/v1/*`. Optional CAA record:
+`0 issue "letsencrypt.org"`. The SSE feed works through the proxy via
+`/api/v1/admin/notifications/stream` (admin JWT as `?_token=`).
+
+### E2E tests (Playwright)
+
+Boots the real stack (seeded FastAPI on :8000 + Vite on :5173) against a
+throwaway SQLite database and drives it with headless Chromium:
+
+```bash
+cd e2e
+../.venv/bin/python -m pytest -v    # volunteer journey + admin SSE feed
+```
 
 See `docs/project-plan.md` for the original plan and todos.
