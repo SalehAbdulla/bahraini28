@@ -5,6 +5,7 @@ so all sessions see the same data), with tables created automatically.
 """
 from __future__ import annotations
 
+import os
 from datetime import datetime, timedelta, timezone
 from typing import Generator
 
@@ -24,8 +25,12 @@ TEST_SECRET = "test-secret-key"
 
 
 def make_test_settings() -> Settings:
+    # The suite runs against an in-memory SQLite database by default. Set the
+    # TEST_DATABASE_URL environment variable to re-run the exact same suite
+    # against a real PostgreSQL instance (used by CI / repeatable checks).
+    database_url = os.environ.get("TEST_DATABASE_URL") or "sqlite:///:memory:"
     return Settings(
-        DATABASE_URL="sqlite:///:memory:",
+        DATABASE_URL=database_url,
         DB_ECHO=False,
         SECRET_KEY=TEST_SECRET,
         JWT_ALGORITHM="HS256",
@@ -44,6 +49,10 @@ def app():
     settings = make_test_settings()
     application = create_app(settings)
     yield application
+    # Dispose the engine so pooled connections are returned on Postgres;
+    # otherwise every test leaks its engine pool and CI servers with a
+    # small max_connections can run out.
+    application.state.engine.dispose()
 
 
 @pytest.fixture

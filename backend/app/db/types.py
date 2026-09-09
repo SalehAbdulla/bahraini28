@@ -21,7 +21,9 @@ from sqlalchemy.types import TypeDecorator
 class TZDateTime(TypeDecorator):
     """DateTime that round-trips as aware UTC regardless of the dialect."""
 
-    impl = DateTime
+    # timezone=True renders TIMESTAMPTZ on PostgreSQL; SQLite ignores the flag
+    # and stores the naive UTC produced in ``process_bind_param``.
+    impl = DateTime(timezone=True)
     cache_ok = True
 
     def process_bind_param(self, value: datetime | None, dialect) -> datetime | None:
