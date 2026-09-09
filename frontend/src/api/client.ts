@@ -8,7 +8,10 @@ import type { ApiError } from "../types";
  * - All responses are JSON; errors are normalized to `ApiError`.
  */
 
-const API_URL = (import.meta.env.VITE_API_URL as string | undefined) || "";
+// Defaults to the same-origin API prefix so the Vite dev proxy (/api → :8000)
+// and the production reverse proxy (/api/* → backend) both work without any
+// per-environment configuration. Override with VITE_API_URL for odd setups.
+const API_URL = (import.meta.env.VITE_API_URL as string | undefined) || "/api/v1";
 const USER_TOKEN_KEY = "be_user_token";
 const ADMIN_TOKEN_KEY = "be_admin_token";
 
