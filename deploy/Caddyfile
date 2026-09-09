@@ -1,0 +1,29 @@
+# Bahraini 28 — Caddy v2 configuration.
+#
+# - Serves the built SPA from the shared `dist_data` volume (mounted at /srv)
+# - Proxies /api, /uploads and the SSE admin notification feed to the backend
+# - Automatic HTTPS via Let's Encrypt for the configured site domain
+
+{
+	admin off
+	{$SITE_TLS_EMAIL_OPTION}
+}
+
+{$SITE_DOMAIN:bahraini28.com}, www.{$SITE_DOMAIN:bahraini28.com} {
+	encode zstd gzip
+
+	root * /srv
+	try_files {path} /index.html
+
+	header {
+		X-Content-Type-Options "nosniff"
+		Referrer-Policy "strict-origin-when-cross-origin"
+		X-Frame-Options "DENY"
+		-X-Server
+	}
+
+	# FastAPI backend (health probe, REST API, uploads, SSE feed)
+	reverse_proxy /health backend:8000
+	reverse_proxy /api/* backend:8000
+	reverse_proxy /uploads/* backend:8000
+}

@@ -1,0 +1,96 @@
+# Bahraini 28 — production stack: PostgreSQL + FastAPI backend + Caddy.
+#
+# Caddy terminates TLS (auto-renewing certs), serves the built frontend and
+# proxies /api, /uploads and the SSE admin feed to the backend.
+#
+# Requires Docker Compose v2.20+ (uses `service_completed_successfully`).
+#   deploy_dir$ docker compose -f docker-compose.yml build
+#   deploy_dir$ docker compose -f docker-compose.yml up -d
+# Or run the one-shot path: ./deploy.sh
+name: bahraini28
+
+services:
+  postgres:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-bahraini28}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in deploy/.env}
+      POSTGRES_DB: ${POSTGRES_DB:-bahraini28}
+      # Store/compare timestamps in UTC (TZDateTime keeps everything UTC).
+      TZ: UTC
+      PGTZ: UTC
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-bahraini28} -d ${POSTGRES_DB:-bahraini28}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks: [internal]
+
+  backend:
+    build:
+      context: ../backend
+    restart: unless-stopped
+    env_file: .env
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      # Persistent location for uploaded business logos (UPLOAD_DIR=/data/uploads).
+      - uploads:/data/uploads
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health', timeout=3)"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+    networks: [internal]
+
+  frontend:
+    # One-shot builder: compiles the SPA and copies `dist/` into the shared
+    # volume that Caddy serves. Never runs as a long-lived service.
+    build:
+      context: ../frontend
+    restart: "no"
+    command: ["sh", "-c", "cp -r /dist/. /out/ && echo 'frontend dist copied to volume'"]
+    volumes:
+      - dist_data:/out
+    networks: [internal]
+
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      SITE_DOMAIN: ${SITE_DOMAIN:-bahraini28.com}
+      # Optional Caddy global option line, e.g. "email admin@example.com".
+      # Leave empty and Caddy picks the default Let's Encrypt contact.
+      SITE_TLS_EMAIL_OPTION: ${SITE_TLS_EMAIL_OPTION:-}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - dist_data:/srv:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      backend:
+        condition: service_healthy
+      frontend:
+        condition: service_completed_successfully
+    networks: [internal]
+
+volumes:
+  # DB data survives container restarts/recreates; back it up with deploy/backup.sh
+  pgdata:
+  # Business logos survive restarts/recreates.
+  uploads:
+  dist_data:
+  caddy_data:
+  caddy_config:
+
+networks:
+  internal:
+    driver: bridge

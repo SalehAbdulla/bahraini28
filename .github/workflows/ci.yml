@@ -1,0 +1,68 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  backend-sqlite:
+    name: Backend tests (SQLite, default)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.14"
+      - name: Install dependencies
+        working-directory: backend
+        run: pip install -r requirements-dev.txt
+      - name: Run test suite
+        working-directory: backend
+        run: pytest
+
+  backend-postgres:
+    name: Backend tests (PostgreSQL)
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_USER: bahraini28
+          POSTGRES_PASSWORD: ci-pass
+          POSTGRES_DB: bahraini28_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U bahraini28 -d bahraini28_test"
+          --health-interval 10s --health-timeout 5s --health-retries 5
+    env:
+      # The same suite (see backend/tests/conftest.py) re-runs against a real
+      # PostgreSQL server — verifies TZDateTime timestamptz round-trips.
+      TEST_DATABASE_URL: postgresql+psycopg://bahraini28:ci-pass@localhost:5432/bahraini28_test
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.14"
+      - name: Install dependencies
+        working-directory: backend
+        run: pip install -r requirements-dev.txt
+      - name: Run test suite (PostgreSQL)
+        working-directory: backend
+        run: pytest
+
+  frontend:
+    name: Frontend type-check + build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install dependencies
+        working-directory: frontend
+        run: npm ci
+      - name: Build (tsc + vite)
+        working-directory: frontend
+        run: npm run build

@@ -37,3 +37,7 @@ Thumbs.db
 # --- Original source assets (tracking not desired) ----------------------------
 Fonts.zip
 Bahraini 28 3.pdf
+
+# --- Playwright / E2E ----------------------------------------------------------
+e2e/test-results/
+e2e/playwright-report/

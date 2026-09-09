@@ -1,0 +1,7 @@
+# Bahraini 28 — cron entries for daily backups (run as root, `crontab -e`).
+#
+# The server clock is UTC on OCI/Ubuntu, so 02:00 UTC == 05:00 Asia/Bahrain.
+# Keep the site alive (the backup job itself counts as activity, which also
+# protects the OCI Always Free ARM instance from idle reclamation).
+
+0 2 * * * /usr/local/bin/bahraini28-backup >> /var/log/bahraini28-backup.log 2>&1
