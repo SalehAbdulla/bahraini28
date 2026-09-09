@@ -98,6 +98,24 @@ class BusinessNotFoundError(AppError):
     message = "Business not found."
 
 
+class BusinessExistsError(AppError):
+    status_code = 409
+    code = "duplicate_business"
+    message = "A business with this commercial registration already exists."
+
+
+class CategoryNotFoundError(AppError):
+    status_code = 404
+    code = "category_not_found"
+    message = "The selected category does not exist."
+
+
+class AreaNotFoundError(AppError):
+    status_code = 404
+    code = "area_not_found"
+    message = "One or more selected areas do not exist."
+
+
 class BusinessInactiveError(AppError):
     status_code = 403
     code = "business_inactive"

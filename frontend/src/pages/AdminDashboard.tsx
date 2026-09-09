@@ -76,6 +76,7 @@ export default function AdminDashboard() {
         </div>
         <div className="flex gap-2 sm:ml-auto">
           <Link to="/admin/users" className="btn-secondary">Users</Link>
+          <Link to="/admin/businesses" className="btn-secondary">Businesses</Link>
           <Link to="/admin/transactions" className="btn-secondary">Ledger</Link>
           <button onClick={adminLogout} className="btn-secondary">Sign out</button>
         </div>

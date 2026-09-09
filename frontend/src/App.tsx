@@ -9,6 +9,7 @@ import BusinessDetail from "./pages/BusinessDetail";
 import Profile from "./pages/Profile";
 import AdminLogin from "./pages/AdminLogin";
 import AdminDashboard from "./pages/AdminDashboard";
+import AdminBusinesses from "./pages/AdminBusinesses";
 import AdminUsers from "./pages/AdminUsers";
 import AdminTransactions from "./pages/AdminTransactions";
 
@@ -43,6 +44,14 @@ export default function App() {
             element={
               <RequireAdmin>
                 <AdminUsers />
+              </RequireAdmin>
+            }
+          />
+          <Route
+            path="/admin/businesses"
+            element={
+              <RequireAdmin>
+                <AdminBusinesses />
               </RequireAdmin>
             }
           />

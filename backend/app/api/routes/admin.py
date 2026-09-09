@@ -6,7 +6,7 @@ import math
 from fastapi import APIRouter, Query
 
 from app.api.deps import CurrentAdmin, DbSession
-from app.models import User
+from app.models import Business, User
 from app.schemas.admin import (
     AdminCreateRequest,
     AdminUpdateRequest,
@@ -17,9 +17,16 @@ from app.schemas.admin import (
     RewardAdjustmentRequest,
     UserAnalytics,
 )
+from app.schemas.business import (
+    AdminBusinessCreate,
+    AdminBusinessOut,
+    AdminBusinessUpdate,
+    BusinessBranchOut,
+)
 from app.schemas.common import Page
 from app.schemas.transaction import TransactionOut
 from app.services import admin as admin_service
+from app.services import businesses as business_service
 from app.services import users as user_service
 
 router = APIRouter(prefix="/admin", tags=["Admin"])
@@ -243,3 +250,91 @@ def transaction_ledger(
         page_size=page_size,
         pages=math.ceil(total / page_size) if total else 0,
     )
+
+
+# --- Business management ------------------------------------------------------
+
+
+def _admin_business_out(b: Business) -> AdminBusinessOut:
+    return AdminBusinessOut(
+        id=b.id,
+        name=b.name,
+        commercial_registration=b.commercial_registration,
+        logo_url=b.logo_path,
+        category_id=b.category_id,
+        category_name=b.category.name if b.category else None,
+        discount_percentage=b.discount_percentage,
+        description=b.description,
+        is_active=b.is_active,
+        expiry_date=b.expiry_date,
+        branches=[
+            BusinessBranchOut(
+                id=branch.id,
+                area_id=branch.area_id,
+                area_name=branch.area.name if branch.area else None,
+                branch_name=branch.branch_name,
+                address=branch.address,
+                phone=branch.phone,
+            )
+            for branch in sorted(b.areas, key=lambda a: a.id)
+        ],
+        created_at=b.created_at,
+        updated_at=b.updated_at,
+    )
+
+
+@router.get("/businesses", response_model=Page[AdminBusinessOut])
+def list_businesses(
+    db: DbSession,
+    admin: CurrentAdmin,
+    search: str | None = Query(None),
+    status: str | None = Query(None, pattern="^(active|inactive)$"),
+    page: int = Query(1, ge=1),
+    page_size: int = Query(10, ge=1, le=100),
+):
+    """Paginated business list incl. inactive/expired partnerships, with search
+    by name, commercial registration or description."""
+    items, total = business_service.list_managed_businesses(
+        db, search=search, status=status, page=page, page_size=page_size
+    )
+    return Page[AdminBusinessOut](
+        items=[_admin_business_out(b) for b in items],
+        total=total,
+        page=page,
+        page_size=page_size,
+        pages=math.ceil(total / page_size) if total else 0,
+    )
+
+
+@router.post("/businesses", response_model=AdminBusinessOut, status_code=201)
+def create_business(
+    payload: AdminBusinessCreate, db: DbSession, admin: CurrentAdmin
+):
+    """Register a new merchant partnership (category + optional branches)."""
+    business = business_service.create_business(
+        db,
+        name=payload.name,
+        commercial_registration=payload.commercial_registration,
+        category_id=payload.category_id,
+        discount_percentage=payload.discount_percentage,
+        description=payload.description,
+        expiry_date=payload.expiry_date,
+        is_active=payload.is_active,
+        branches=payload.branches,
+    )
+    return _admin_business_out(business_service.get_business_full(db, business.id))
+
+
+@router.put("/businesses/{business_id}", response_model=AdminBusinessOut)
+def update_business(
+    business_id: int,
+    payload: AdminBusinessUpdate,
+    db: DbSession,
+    admin: CurrentAdmin,
+):
+    """Update a business; omit fields to keep current values, pass ``branches``
+    (even empty) to replace the branch list."""
+    business = business_service.get_business_or_404(db, business_id)
+    changes = payload.model_dump(exclude_unset=True)
+    business_service.update_business(db, business, changes)
+    return _admin_business_out(business_service.get_business_full(db, business_id))

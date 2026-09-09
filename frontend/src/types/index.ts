@@ -64,6 +64,29 @@ export interface AreaOut {
   name: string;
 }
 
+export interface AdminBusinessOut {
+  id: number;
+  name: string;
+  commercial_registration: string;
+  logo_url: string | null;
+  category_id: number;
+  category_name: string | null;
+  discount_percentage: number;
+  description: string | null;
+  is_active: boolean;
+  expiry_date: string;
+  branches: Array<{
+    id: number;
+    area_id: number;
+    area_name: string;
+    branch_name: string | null;
+    address: string | null;
+    phone: string | null;
+  }>;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface TransactionOut {
   id: number;
   business_id: number;

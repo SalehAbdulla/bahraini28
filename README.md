@@ -106,7 +106,9 @@ so the dev proxy and the production reverse proxy need no extra config.
   activation modal.
 - Admin: dashboard with KPIs + **SSE live purchase feed**, user management
   (CRUD / expiry override / reward adjustment / password reset / activate /
-  deactivate), and master transaction ledger.
+  deactivate), **business management (register / edit / activate-deactivate
+  partnerships with categories and multi-area branches)**, and master
+  transaction ledger.
 
 ---
 

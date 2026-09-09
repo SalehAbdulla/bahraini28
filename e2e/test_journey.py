@@ -82,6 +82,36 @@ def test_volunteer_journey(browser, app_url: str) -> None:
     context.close()
 
 
+def test_admin_registers_business(browser, app_url: str) -> None:
+    context = browser.new_context()
+    page = context.new_page()
+
+    # --- admin login via UI ------------------------------------------------
+    page.goto(f"{app_url}/admin/login")
+    page.fill("#admin-username", "admin")
+    page.fill("#admin-password", "admin123")
+    page.click("button:has-text('Sign in to dashboard')")
+    expect(page.get_by_text("Admin Dashboard")).to_be_visible(timeout=10000)
+
+    # --- open business management -------------------------------------------
+    page.click("a:has-text('Businesses')")
+    expect(page.get_by_role("heading", name="Business Management")).to_be_visible(timeout=10000)
+
+    # --- register a new partnership ------------------------------------------
+    page.click("button:has-text('Register business')")
+    stamp = int(time.time() * 1000)
+    page.get_by_label("Business name").fill(f"E2E Store {stamp}")
+    page.get_by_label("Commercial registration").fill(f"CR-E2E-{stamp}")
+    page.get_by_label("Category").select_option(index=1)
+    page.get_by_label("Discount %").fill("12")
+    page.locator("button:has-text('Save business')").click()
+
+    # --- the new partnership appears in the management table -----------------
+    expect(page.get_by_text(f"E2E Store {stamp}")).to_be_visible(timeout=10000)
+    expect(page.get_by_text(f"CR-E2E-{stamp}")).to_be_visible()
+    context.close()
+
+
 def test_admin_dashboard_sse_feed(browser, app_url: str) -> None:
     context = browser.new_context()
 
