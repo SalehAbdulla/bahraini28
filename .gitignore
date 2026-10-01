@@ -19,8 +19,11 @@ htmlcov/
 *.sqlite3
 
 # --- Backend uploads ----------------------------------------------------------
-backend/uploads/*
-!backend/uploads/.gitkeep
+# Business logos are runtime data, never committed. This ignores any `uploads`
+# directory at any depth (covers `backend/uploads` and stray nested dirs such as
+# `backend/backend/uploads` created when the API/tests run from a different
+# working directory).
+uploads/
 
 # --- Node.js / Vite -----------------------------------------------------------
 node_modules/
@@ -37,6 +40,7 @@ Thumbs.db
 # --- Original source assets (tracking not desired) ----------------------------
 Fonts.zip
 Bahraini 28 3.pdf
+Brand/
 
 # --- Playwright / E2E ----------------------------------------------------------
 e2e/test-results/
