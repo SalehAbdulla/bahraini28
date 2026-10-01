@@ -95,6 +95,23 @@ Seamlessly bridges physical retail interactions with digital accountability, ens
 
 ---
 
+## Additional System Update (Areas & Categories Management)
+
+The directory's area filter and merchant categories are data-driven rather than
+hard-coded, and administrators manage them from the control center:
+
+- [x] Bundle the organization's official Bahrain area list
+  (`backend/data/bahrain_areas.csv` — 164 distinct areas across 4
+  governorates, derived from the provided address dataset) and import it
+  idempotently via `backend/scripts/seed_areas.py`.
+- [x] Admin API + UI (`/admin/catalog`) to add, rename, activate/deactivate and
+  delete **areas**, and to add, rename and delete **categories** (slug
+  auto-generated from the name).
+- [x] Deletion guards: deleting an area still linked to a business branch, or a
+  category still assigned to a business, returns `409` instead of cascading.
+
+---
+
 ## Production Deployment
 
 Target: **Oracle Cloud Always Free** (Ampere A1 ARM, Ubuntu 24.04, ≥2 GB RAM)

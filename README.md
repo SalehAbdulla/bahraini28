@@ -60,6 +60,9 @@ uvicorn app.main:app --reload --port 8000
 
 # seed demo data (optional)
 PYTHONPATH=. python scripts/seed.py
+
+# import the real Bahrain area list (optional, idempotent)
+PYTHONPATH=. python scripts/seed_areas.py
 ```
 
 Default bootstrapped admin (change in production via `.env`):
@@ -69,7 +72,7 @@ Default bootstrapped admin (change in production via `.env`):
 
 ```bash
 cd backend
-pytest                                   # 44 tests (in-memory SQLite)
+pytest                                   # 69 tests (in-memory SQLite)
 ```
 
 Re-run the exact same suite against a real PostgreSQL server (used by CI):
@@ -108,7 +111,7 @@ so the dev proxy and the production reverse proxy need no extra config.
   (CRUD / expiry override / reward adjustment / password reset / activate /
   deactivate), **business management (register / edit / logo upload /
   activate-deactivate partnerships with categories and multi-area
-  branches)**, and master
+  branches)**, **areas & categories management**, and master
   transaction ledger.
 
 ---
