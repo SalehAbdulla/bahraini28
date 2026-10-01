@@ -6,6 +6,7 @@ so all sessions see the same data), with tables created automatically.
 from __future__ import annotations
 
 import os
+import tempfile
 from datetime import datetime, timedelta, timezone
 from typing import Generator
 
@@ -22,6 +23,9 @@ from app.models import Admin, Area, Business, BusinessArea, Category, User
 TEST_TZ = "UTC"
 TEST_LIMIT = 3
 TEST_SECRET = "test-secret-key"
+
+# Logo-upload tests write real files; keep them out of the repo tree.
+TEST_UPLOAD_DIR = tempfile.mkdtemp(prefix="bahraini28-test-uploads-")
 
 
 def make_test_settings() -> Settings:
@@ -41,6 +45,7 @@ def make_test_settings() -> Settings:
         ADMIN_INITIAL_PASSWORD="admin123",
         ADMIN_INITIAL_NAME="Test Admin",
         CORS_ORIGINS=["http://localhost:5173"],
+        UPLOAD_DIR=TEST_UPLOAD_DIR,
     )
 
 
