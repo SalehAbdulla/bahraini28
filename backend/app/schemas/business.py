@@ -52,6 +52,42 @@ class AreaOut(ORMModel):
     name: str
 
 
+# --- Admin catalog management (areas & categories) -----------------------------
+
+
+class AdminAreaOut(ORMModel):
+    id: int
+    name: str
+    is_active: bool
+    created_at: datetime
+
+
+class AreaCreate(BaseModel):
+    name: str = Field(min_length=2, max_length=80)
+
+
+class AreaUpdate(BaseModel):
+    """Omitted fields keep their current value."""
+
+    name: str | None = Field(None, min_length=2, max_length=80)
+    is_active: bool | None = None
+
+
+class CategoryCreate(BaseModel):
+    name: str = Field(min_length=2, max_length=80)
+    slug: str | None = Field(None, min_length=2, max_length=80)
+    description: str | None = Field(None, max_length=255)
+
+
+class CategoryUpdate(BaseModel):
+    """Omitted fields keep their current value."""
+
+    name: str | None = Field(None, min_length=2, max_length=80)
+    slug: str | None = Field(None, min_length=2, max_length=80)
+    description: str | None = Field(None, max_length=255)
+
+
+
 # --- Admin business management -------------------------------------------------
 
 

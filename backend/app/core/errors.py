@@ -116,6 +116,30 @@ class AreaNotFoundError(AppError):
     message = "One or more selected areas do not exist."
 
 
+class CategoryExistsError(AppError):
+    status_code = 409
+    code = "duplicate_category"
+    message = "A category with this name already exists."
+
+
+class CategoryInUseError(AppError):
+    status_code = 409
+    code = "category_in_use"
+    message = "This category is assigned to one or more businesses."
+
+
+class AreaExistsError(AppError):
+    status_code = 409
+    code = "duplicate_area"
+    message = "An area with this name already exists."
+
+
+class AreaInUseError(AppError):
+    status_code = 409
+    code = "area_in_use"
+    message = "This area is linked to one or more business branches."
+
+
 class UnsupportedFileTypeError(AppError):
     status_code = 400
     code = "unsupported_file_type"

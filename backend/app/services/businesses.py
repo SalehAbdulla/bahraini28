@@ -1,13 +1,20 @@
 """Business directory service (public + admin management)."""
 from __future__ import annotations
 
+import re
+import uuid
+
 from sqlalchemy import func, or_, select
 from sqlalchemy.orm import Session, joinedload, selectinload
 
 from app.core.errors import (
+    AreaExistsError,
+    AreaInUseError,
     AreaNotFoundError,
     BusinessExistsError,
     BusinessNotFoundError,
+    CategoryExistsError,
+    CategoryInUseError,
     CategoryNotFoundError,
 )
 from app.models import Area, Business, BusinessArea, Category
@@ -284,3 +291,146 @@ def area_names_for(db: Session, business_ids: list[int]) -> dict[int, list[str]]
     for names in mapping.values():
         names.sort()
     return mapping
+
+
+# --- Admin catalog management (areas & categories) ----------------------------
+
+
+def _slugify(value: str) -> str:
+    """Best-effort URL slug (ASCII); empty for non-Latin names, e.g. Arabic."""
+    return re.sub(r"[^a-z0-9]+", "-", value.strip().lower()).strip("-")
+
+
+def get_area_or_404(db: Session, area_id: int) -> Area:
+    area = db.get(Area, area_id)
+    if area is None:
+        raise AreaNotFoundError("Area not found.")
+    return area
+
+
+def get_category_or_404(db: Session, category_id: int) -> Category:
+    category = db.get(Category, category_id)
+    if category is None:
+        raise CategoryNotFoundError("Category not found.")
+    return category
+
+
+def list_all_areas(db: Session) -> list[Area]:
+    """Every area, including deactivated ones (admin management view)."""
+    return list(db.scalars(select(Area).order_by(Area.name.asc())).all())
+
+
+def _area_name_taken(db: Session, name: str, *, exclude_id: int | None = None) -> bool:
+    stmt = select(Area.id).where(func.lower(Area.name) == name.lower())
+    if exclude_id is not None:
+        stmt = stmt.where(Area.id != exclude_id)
+    return db.scalar(stmt) is not None
+
+
+def create_area(db: Session, *, name: str) -> Area:
+    name = name.strip()
+    if _area_name_taken(db, name):
+        raise AreaExistsError
+    area = Area(name=name)
+    db.add(area)
+    db.commit()
+    db.refresh(area)
+    return area
+
+
+def update_area(db: Session, area: Area, changes: dict) -> Area:
+    new_name = changes.get("name")
+    if new_name is not None:
+        new_name = new_name.strip()
+        if new_name.lower() != area.name.lower() and _area_name_taken(
+            db, new_name, exclude_id=area.id
+        ):
+            raise AreaExistsError
+        area.name = new_name
+    if changes.get("is_active") is not None:
+        area.is_active = changes["is_active"]
+    db.commit()
+    db.refresh(area)
+    return area
+
+
+def delete_area(db: Session, area: Area) -> None:
+    linked = db.scalar(
+        select(func.count(BusinessArea.id)).where(BusinessArea.area_id == area.id)
+    )
+    if linked:
+        raise AreaInUseError
+    db.delete(area)
+    db.commit()
+
+
+def _category_name_taken(db: Session, name: str, *, exclude_id: int | None = None) -> bool:
+    stmt = select(Category.id).where(func.lower(Category.name) == name.lower())
+    if exclude_id is not None:
+        stmt = stmt.where(Category.id != exclude_id)
+    return db.scalar(stmt) is not None
+
+
+def _category_slug_taken(db: Session, slug: str, *, exclude_id: int | None = None) -> bool:
+    stmt = select(Category.id).where(func.lower(Category.slug) == slug.lower())
+    if exclude_id is not None:
+        stmt = stmt.where(Category.id != exclude_id)
+    return db.scalar(stmt) is not None
+
+
+def create_category(
+    db: Session,
+    *,
+    name: str,
+    slug: str | None = None,
+    description: str | None = None,
+) -> Category:
+    name = name.strip()
+    if _category_name_taken(db, name):
+        raise CategoryExistsError
+    slug = (slug or "").strip() or _slugify(name)
+    if not slug:
+        slug = f"category-{uuid.uuid4().hex[:6]}"
+    if _category_slug_taken(db, slug):
+        raise CategoryExistsError("A category with this slug already exists.")
+    category = Category(name=name, slug=slug, description=description)
+    db.add(category)
+    db.commit()
+    db.refresh(category)
+    return category
+
+
+def update_category(db: Session, category: Category, changes: dict) -> Category:
+    new_name = changes.get("name")
+    if new_name is not None:
+        new_name = new_name.strip()
+        if new_name.lower() != category.name.lower() and _category_name_taken(
+            db, new_name, exclude_id=category.id
+        ):
+            raise CategoryExistsError
+        category.name = new_name
+
+    new_slug = changes.get("slug")
+    if new_slug is not None:
+        new_slug = new_slug.strip()
+        if new_slug.lower() != category.slug.lower() and _category_slug_taken(
+            db, new_slug, exclude_id=category.id
+        ):
+            raise CategoryExistsError("A category with this slug already exists.")
+        category.slug = new_slug
+
+    if "description" in changes:
+        category.description = changes["description"]
+    db.commit()
+    db.refresh(category)
+    return category
+
+
+def delete_category(db: Session, category: Category) -> None:
+    linked = db.scalar(
+        select(func.count(Business.id)).where(Business.category_id == category.id)
+    )
+    if linked:
+        raise CategoryInUseError
+    db.delete(category)
+    db.commit()

@@ -21,10 +21,16 @@ from app.schemas.admin import (
     UserAnalytics,
 )
 from app.schemas.business import (
+    AdminAreaOut,
     AdminBusinessCreate,
     AdminBusinessOut,
     AdminBusinessUpdate,
+    AreaCreate,
+    AreaUpdate,
     BusinessBranchOut,
+    CategoryCreate,
+    CategoryOut,
+    CategoryUpdate,
 )
 from app.schemas.common import Page
 from app.schemas.transaction import TransactionOut
@@ -390,3 +396,69 @@ async def upload_business_logo(
     db.commit()
     db.expire(business)
     return _admin_business_out(business_service.get_business_full(db, business_id))
+
+
+# --- Catalog management (areas & categories) ----------------------------------
+
+
+@router.get("/areas", response_model=list[AdminAreaOut])
+def list_areas(db: DbSession, admin: CurrentAdmin):
+    """Every area (including deactivated ones) for the admin catalog view."""
+    return [AdminAreaOut.model_validate(a) for a in business_service.list_all_areas(db)]
+
+
+@router.post("/areas", response_model=AdminAreaOut, status_code=201)
+def create_area(payload: AreaCreate, db: DbSession, admin: CurrentAdmin):
+    """Add a new geographic area."""
+    return AdminAreaOut.model_validate(business_service.create_area(db, name=payload.name))
+
+
+@router.put("/areas/{area_id}", response_model=AdminAreaOut)
+def update_area(
+    area_id: int, payload: AreaUpdate, db: DbSession, admin: CurrentAdmin
+):
+    """Rename an area and/or toggle its active flag."""
+    area = business_service.get_area_or_404(db, area_id)
+    updated = business_service.update_area(db, area, payload.model_dump(exclude_unset=True))
+    return AdminAreaOut.model_validate(updated)
+
+
+@router.delete("/areas/{area_id}", status_code=204)
+def delete_area(area_id: int, db: DbSession, admin: CurrentAdmin):
+    """Delete an area; blocked while any business branch still references it."""
+    area = business_service.get_area_or_404(db, area_id)
+    business_service.delete_area(db, area)
+
+
+@router.get("/categories", response_model=list[CategoryOut])
+def list_categories(db: DbSession, admin: CurrentAdmin):
+    """All merchant categories for the admin catalog view."""
+    return [CategoryOut.model_validate(c) for c in business_service.list_categories(db)]
+
+
+@router.post("/categories", response_model=CategoryOut, status_code=201)
+def create_category(payload: CategoryCreate, db: DbSession, admin: CurrentAdmin):
+    """Add a new merchant category (slug auto-generated from the name)."""
+    category = business_service.create_category(
+        db, name=payload.name, slug=payload.slug, description=payload.description
+    )
+    return CategoryOut.model_validate(category)
+
+
+@router.put("/categories/{category_id}", response_model=CategoryOut)
+def update_category(
+    category_id: int, payload: CategoryUpdate, db: DbSession, admin: CurrentAdmin
+):
+    """Rename a category and/or update its slug/description."""
+    category = business_service.get_category_or_404(db, category_id)
+    updated = business_service.update_category(
+        db, category, payload.model_dump(exclude_unset=True)
+    )
+    return CategoryOut.model_validate(updated)
+
+
+@router.delete("/categories/{category_id}", status_code=204)
+def delete_category(category_id: int, db: DbSession, admin: CurrentAdmin):
+    """Delete a category; blocked while any business still references it."""
+    category = business_service.get_category_or_404(db, category_id)
+    business_service.delete_category(db, category)
