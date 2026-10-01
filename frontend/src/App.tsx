@@ -12,6 +12,7 @@ import AdminDashboard from "./pages/AdminDashboard";
 import AdminBusinesses from "./pages/AdminBusinesses";
 import AdminUsers from "./pages/AdminUsers";
 import AdminTransactions from "./pages/AdminTransactions";
+import AdminCatalog from "./pages/AdminCatalog";
 
 export default function App() {
   return (
@@ -60,6 +61,14 @@ export default function App() {
             element={
               <RequireAdmin>
                 <AdminTransactions />
+              </RequireAdmin>
+            }
+          />
+          <Route
+            path="/admin/catalog"
+            element={
+              <RequireAdmin>
+                <AdminCatalog />
               </RequireAdmin>
             }
           />

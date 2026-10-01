@@ -64,6 +64,11 @@ export interface AreaOut {
   name: string;
 }
 
+export interface AdminAreaOut extends AreaOut {
+  is_active: boolean;
+  created_at: string;
+}
+
 export interface AdminBusinessOut {
   id: number;
   name: string;
