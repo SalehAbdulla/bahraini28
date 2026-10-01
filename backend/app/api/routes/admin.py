@@ -7,8 +7,7 @@ from pathlib import Path
 
 from fastapi import APIRouter, File, Query, UploadFile
 
-from app.api.deps import CurrentAdmin, DbSession
-from app.core.config import get_settings
+from app.api.deps import AppSettings, CurrentAdmin, DbSession
 from app.core.errors import FileTooLargeError, UnsupportedFileTypeError
 from app.models import Business, User
 from app.schemas.admin import (
@@ -358,13 +357,13 @@ async def upload_business_logo(
     file: UploadFile = File(...),
     db: DbSession = None,  # type: ignore[assignment]
     admin: CurrentAdmin = None,  # type: ignore[assignment]
+    settings: AppSettings = None,  # type: ignore[assignment]
 ):
     """Upload/replace a business logo (PNG/JPEG/GIF/WebP, size limited by
     ``MAX_UPLOAD_SIZE_MB``). The previous logo file is removed so old uploads
     don't accumulate. Files land in ``UPLOAD_DIR`` and are served at /uploads.
     """
     business = business_service.get_business_or_404(db, business_id)
-    settings = get_settings()
 
     ext = _ALLOWED_LOGO_TYPES.get((file.content_type or "").lower())
     if ext is None:

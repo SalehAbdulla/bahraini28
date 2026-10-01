@@ -13,10 +13,11 @@ from datetime import datetime, timezone
 from typing import Annotated
 
 import jwt
-from fastapi import Depends
+from fastapi import Depends, Request
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy.orm import Session
 
+from app.core.config import Settings
 from app.core.errors import (
     InvalidTokenError,
     MembershipExpiredError,
@@ -92,3 +93,16 @@ def get_current_admin(
 DbSession = Annotated[Session, Depends(get_db)]
 CurrentUser = Annotated[User, Depends(get_current_user)]
 CurrentAdmin = Annotated[Admin, Depends(get_current_admin)]
+
+
+def get_app_settings(request: Request) -> Settings:
+    """Return the settings the running app was created with.
+
+    Reads ``app.state.settings`` (set in ``create_app``) rather than the cached
+    global so tests / embedded apps that inject custom settings see the same
+    ``UPLOAD_DIR``/limits the app was mounted with.
+    """
+    return request.app.state.settings
+
+
+AppSettings = Annotated[Settings, Depends(get_app_settings)]
