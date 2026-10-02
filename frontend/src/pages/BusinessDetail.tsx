@@ -68,41 +68,48 @@ export default function BusinessDetail() {
   };
 
   if (notFound) {
-    return <p className="text-slate-400 py-16 text-center">Business not found.</p>;
+    return <p className="text-ink-800/50 py-16 text-center">Business not found.</p>;
   }
   if (!business) {
-    return <p className="text-slate-400 py-16 text-center">Loading…</p>;
+    return <p className="text-ink-800/50 py-16 text-center">Loading…</p>;
   }
 
   return (
     <div className="max-w-4xl">
-      <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm">
+      <div className="bg-white border border-ink-900/10 rounded-2xl p-6">
         <div className="flex items-center justify-between gap-4 flex-wrap">
           <div className="flex items-center gap-4">
             {business.logo_url && (
               <img
                 src={business.logo_url}
                 alt={business.name}
-                className="h-16 w-16 object-contain rounded-lg border border-slate-200"
+                className="h-16 w-16 object-contain rounded-lg border border-ink-900/10"
               />
             )}
             <div>
-              <h1 className="text-3xl font-extrabold text-slate-900">{business.name}</h1>
-              <p className="mt-1 text-sm text-slate-500">
+              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-brand-600/80">
+                Partner
+              </p>
+              <h1 className="mt-2 font-serif text-3xl font-normal tracking-[-0.015em] text-ink-900">
+                {business.name}
+              </h1>
+              <p className="mt-1 text-sm text-ink-800/60">
                 {business.category_name} · CR {business.commercial_registration}
               </p>
             </div>
           </div>
-          <span className="inline-block text-sm font-semibold rounded-full px-3 py-1 bg-brand-100 text-brand-700">
+          <span className="inline-block text-sm font-semibold px-3 py-1 bg-brand-100 text-brand-700">
             -{business.discount_percentage}% discount
           </span>
         </div>
-        <p className="mt-4 text-slate-600">
+        <p className="mt-4 text-ink-800/70">
           {business.description ?? "No description provided."}
         </p>
         <div className="mt-5">
-          <h3 className="font-semibold text-slate-900 mb-2">Active areas / branches</h3>
-          <ul className="text-sm text-slate-600 space-y-1">
+          <h3 className="mb-2 font-serif text-lg font-normal text-ink-900">
+            Active areas / branches
+          </h3>
+          <ul className="text-sm text-ink-800/70 space-y-1">
             {business.areas.map((a) => (
               <li key={a.id}>
                 📍 {a.area_name}
@@ -113,11 +120,12 @@ export default function BusinessDetail() {
         </div>
       </div>
 
-      <div className="mt-6 bg-white border border-slate-200 rounded-2xl p-6 shadow-sm">
-        <h2 className="font-semibold text-slate-900">Submit an invoice</h2>
-        <p className="mt-1 text-sm text-slate-600">
+      <div className="mt-6 bg-white border border-ink-900/10 rounded-2xl p-6">
+        <h2 className="font-serif text-xl font-normal text-ink-900">Submit an invoice</h2>
+        <p className="mt-1 text-sm text-ink-800/70">
           Enter the invoice number from your physical receipt to earn a reward.
-          Limit: 3 uses per business per day (resets at midnight).
+          Each invoice can be credited once, and there is a daily cap per partner
+          and overall (resets at midnight).
         </p>
         <form onSubmit={submitInvoice} className="mt-4 flex gap-3 flex-wrap">
           <input
@@ -136,7 +144,8 @@ export default function BusinessDetail() {
         {result && (
           <div className="mt-3 text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-lg px-3 py-2 text-sm">
             ✅ Invoice verified! +{result.reward_increment} reward ·{" "}
-            {result.remaining_today} uses left today here.
+            {result.remaining_today} uses left today here ·{" "}
+            {result.remaining_today_total} left today overall.
           </div>
         )}
         {error && (
@@ -145,16 +154,16 @@ export default function BusinessDetail() {
           </div>
         )}
       </div>
-      <h2 className="mt-8 text-xl font-bold text-slate-900">
+      <h2 className="mt-8 font-serif text-xl font-normal text-ink-900">
         Public transaction history
       </h2>
-      <div className="mt-3 bg-white border border-slate-200 rounded-2xl overflow-hidden">
+      <div className="mt-3 bg-white border border-ink-900/10 rounded-2xl overflow-hidden">
         {history.length === 0 ? (
-          <p className="p-4 text-sm text-slate-400">No transactions yet.</p>
+          <p className="p-4 text-sm text-ink-800/50">No transactions yet.</p>
         ) : (
           <table className="w-full text-sm">
             <thead>
-              <tr className="bg-slate-50 text-left text-slate-500">
+              <tr className="bg-ink-900/5 text-left text-ink-800/60">
                 <th className="px-4 py-2">Invoice</th>
                 <th className="px-4 py-2">Reward</th>
                 <th className="px-4 py-2">Date</th>
@@ -162,7 +171,7 @@ export default function BusinessDetail() {
             </thead>
             <tbody>
               {history.map((t) => (
-                <tr key={t.id} className="border-t border-slate-100">
+                <tr key={t.id} className="border-t border-ink-900/10">
                   <td className="px-4 py-2">{t.invoice_number}</td>
                   <td className="px-4 py-2">+{t.reward_increment}</td>
                   <td className="px-4 py-2">{fmtDate(t.created_at)}</td>
