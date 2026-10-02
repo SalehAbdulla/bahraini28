@@ -13,6 +13,7 @@ import AdminBusinesses from "./pages/AdminBusinesses";
 import AdminUsers from "./pages/AdminUsers";
 import AdminTransactions from "./pages/AdminTransactions";
 import AdminCatalog from "./pages/AdminCatalog";
+import AdminReviews from "./pages/AdminReviews";
 
 export default function App() {
   return (
@@ -61,6 +62,14 @@ export default function App() {
             element={
               <RequireAdmin>
                 <AdminTransactions />
+              </RequireAdmin>
+            }
+          />
+          <Route
+            path="/admin/reviews"
+            element={
+              <RequireAdmin>
+                <AdminReviews />
               </RequireAdmin>
             }
           />
