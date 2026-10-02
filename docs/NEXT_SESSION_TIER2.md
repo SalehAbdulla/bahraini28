@@ -1,6 +1,25 @@
 # Next session — Tier 2: receipt proof + admin approval
 
-**Status:** ready to execute. Tier 1 is shipped (see `docs/ANTI_FRAUD_PLAN.md`).
+**Status:** ✅ **shipped.** Tier 1 hardening landed first (see
+`docs/ANTI_FRAUD_PLAN.md`); this document was the execution plan and is kept for
+the record. See `docs/ANTI_FRAUD_PLAN.md` for the as-built control table (real
+column and endpoint names).
+
+## As-built notes (differences from the sketch below)
+
+- The upload block was extracted into a single shared helper,
+  `app/services/uploads.py::store_upload`, used by **both** the logo upload and
+  the receipt upload — one storage mechanism, not two copies.
+- The submit endpoint is multipart **and** still accepts a JSON body, so a
+  deployment that sets `REQUIRE_RECEIPT_REVIEW=false` can keep an older client
+  (and the Tier 1 test suite) working unchanged.
+- The receipt is declared optional at the signature (`File(None)`) and made
+  mandatory at runtime when `REQUIRE_RECEIPT_REVIEW` is true, because the
+  required/optional behaviour is a deployment switch, not a static contract.
+- The daily caps count `pending` **and** `approved` but exclude `rejected`, so a
+  rejected submission frees its slot instead of penalising the volunteer.
+- The review queue is oldest-first, and its UI lives at `/admin/reviews`
+  (`frontend/src/pages/AdminReviews.tsx`).
 
 ## Why this is the next thing
 
@@ -200,14 +219,17 @@ Run: `cd backend && PYTHONPATH=. ../.venv/bin/python -m pytest -q`
 
 ## Acceptance criteria
 
-- [ ] No code path credits `reward_points` except `approve_transaction` and an
-      admin manual adjustment.
-- [ ] A submission with no readable receipt can never reach `approved`.
-- [ ] Every approval is traceable to an admin id + timestamp + audit row.
-- [ ] Legacy transactions are backfilled to `approved` (no rewards lost).
-- [ ] Sharp corners, editorial serif headings, and balanced gutters
-      (`scrollWidth === innerWidth`) are preserved on every touched page.
-- [ ] Full backend suite green; frontend `npm run build` green.
+- [x] No code path credits `reward_points` except `approve_transaction` and an
+      admin manual adjustment (the sole exception is the documented Tier-1
+      fallback when `REQUIRE_RECEIPT_REVIEW=false`).
+- [x] A submission with no readable receipt can never reach `approved`.
+- [x] Every approval is traceable to an admin id + timestamp + audit row.
+- [x] Legacy transactions are backfilled to `approved` (no rewards lost).
+- [x] Sharp corners, editorial serif headings, and balanced gutters
+      (`scrollWidth === innerWidth`) are preserved on every touched page
+      (measured: `/`, `/directory`, `/businesses/1`, `/profile`, `/admin`,
+      `/admin/reviews` all report `scrollWidth == innerWidth == 1280`).
+- [x] Full backend suite green (92 passed); frontend `npm run build` green.
 
 ## Gotchas to remember
 
