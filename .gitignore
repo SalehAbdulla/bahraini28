@@ -38,9 +38,12 @@ Thumbs.db
 .vscode/
 
 # --- Original source assets (tracking not desired) ----------------------------
-Fonts.zip
-Bahraini 28 3.pdf
-Brand/
+# Anchored on purpose. A bare `Brand/` also matched `frontend/public/brand/`
+# (git applies core.ignorecase when matching ignore rules), which silently kept
+# the brand assets the app actually serves out of every commit.
+/docs/Fonts.zip
+/docs/Bahraini 28 3.pdf
+/Brand/
 
 # --- Playwright / E2E ----------------------------------------------------------
 e2e/test-results/
