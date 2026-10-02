@@ -19,6 +19,7 @@ interface BizFormState {
   category_id: number | "";
   discount_percentage: string;
   description: string;
+  invoice_pattern: string;
   expiry: string;
   is_active: boolean;
   logo: File | null;
@@ -42,6 +43,7 @@ function newForm(): BizFormState {
     category_id: "",
     discount_percentage: "0",
     description: "",
+    invoice_pattern: "",
     expiry: toLocalInput(new Date(Date.now() + 365 * 864e5)),
     is_active: true,
     logo: null,
@@ -105,6 +107,7 @@ export default function AdminBusinesses() {
       category_id: b.category_id,
       discount_percentage: String(b.discount_percentage),
       description: b.description ?? "",
+      invoice_pattern: b.invoice_pattern ?? "",
       expiry: toLocalInput(b.expiry_date),
       is_active: b.is_active,
       logo: null,
@@ -151,6 +154,7 @@ export default function AdminBusinesses() {
       category_id: Number(form.category_id),
       discount_percentage: discount,
       description: form.description.trim() || null,
+      invoice_pattern: form.invoice_pattern.trim() || null,
       expiry_date: new Date(form.expiry).toISOString(),
       is_active: form.is_active,
       branches: form.branches
@@ -271,12 +275,12 @@ export default function AdminBusinesses() {
                   <td className="px-4 py-2">
                     {b.is_active ? (
                       new Date(b.expiry_date) > new Date() ? (
-                        <span className="inline-block text-xs font-semibold rounded-full px-2.5 py-1 bg-brand-100 text-brand-700">Active</span>
+                        <span className="inline-block text-xs font-semibold px-2.5 py-1 bg-brand-100 text-brand-700">Active</span>
                       ) : (
-                        <span className="inline-block text-xs font-semibold rounded-full px-2.5 py-1 bg-amber-100 text-amber-700">Expired</span>
+                        <span className="inline-block text-xs font-semibold px-2.5 py-1 bg-amber-100 text-amber-700">Expired</span>
                       )
                     ) : (
-                      <span className="inline-block text-xs font-semibold rounded-full px-2.5 py-1 bg-slate-200 text-slate-600">Inactive</span>
+                      <span className="inline-block text-xs font-semibold px-2.5 py-1 bg-slate-200 text-slate-600">Inactive</span>
                     )}
                   </td>
                   <td className="px-4 py-2 text-right whitespace-nowrap">
@@ -330,6 +334,23 @@ export default function AdminBusinesses() {
                 <div className="sm:col-span-2">
                   <label htmlFor="biz-desc" className="block text-sm font-medium text-slate-700">Description</label>
                   <textarea id="biz-desc" rows={3} className="input-field" maxLength={2000} value={form.description} onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))} />
+                </div>
+                <div className="sm:col-span-2">
+                  <label htmlFor="biz-pattern" className="block text-sm font-medium text-slate-700">
+                    Invoice number pattern (optional)
+                  </label>
+                  <input
+                    id="biz-pattern"
+                    className="input-field font-mono"
+                    maxLength={160}
+                    placeholder="e.g. B28-\d{5}"
+                    value={form.invoice_pattern}
+                    onChange={(e) => setForm((f) => ({ ...f, invoice_pattern: e.target.value }))}
+                  />
+                  <p className="mt-1 text-xs text-slate-500">
+                    Regex the submitted invoice number must fully match. Leave blank to accept any
+                    alphanumeric invoice (3–64 chars). This is how fabricated numbers are rejected.
+                  </p>
                 </div>
                 <div className="sm:col-span-2 flex items-center gap-2">
                   <input id="biz-active" type="checkbox" checked={form.is_active} onChange={(e) => setForm((f) => ({ ...f, is_active: e.target.checked }))} />
