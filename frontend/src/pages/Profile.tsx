@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState, type FormEvent } from "react";
 import { api } from "../api/client";
 import { useAuth } from "../auth/AuthContext";
+import StatusPill from "../components/StatusPill";
 import { fmtDate, fmtDateOnly } from "./BusinessDetail";
 import type { Page, TransactionOut, UserProfile } from "../types";
 
@@ -56,7 +57,8 @@ export default function Profile() {
   if (!me) return <p className="text-ink-800/50 py-16 text-center">Loading…</p>;
 
   const cards = [
-    { label: "Reward points", value: me.reward_points, cls: "text-brand-600" },
+    { label: "Approved rewards", value: me.reward_points, cls: "text-brand-600" },
+    { label: "Awaiting review", value: me.pending_reward_points, cls: "text-ink-800/70" },
     { label: "Membership", value: me.is_active ? "Active" : "Inactive", cls: "text-brand-600" },
     { label: "Expires", value: fmtDateOnly(me.expiry_date), cls: "text-ink-800/70" },
   ];
@@ -80,7 +82,7 @@ export default function Profile() {
         </button>
       </div>
 
-      <div className="mt-8 grid sm:grid-cols-3 gap-4">
+      <div className="mt-8 grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {cards.map((c) => (
           <div key={c.label} className="bg-white border border-ink-900/10 rounded-2xl p-5">
             <div className="text-xs font-semibold uppercase tracking-wide text-ink-800/60">
@@ -102,7 +104,8 @@ export default function Profile() {
               ["CPR", me.cpr],
               ["Email", me.email],
               ["Phone", me.phone || "—"],
-              ["Reward points", me.reward_points],
+              ["Approved rewards", me.reward_points],
+              ["Awaiting review", me.pending_reward_points],
               ["Membership expiry", fmtDate(me.expiry_date)],
             ].map(([k, v]) => (
               <div key={k} className="flex justify-between gap-4 border-b border-ink-900/10 pb-2">
@@ -160,6 +163,7 @@ export default function Profile() {
                 <th className="px-4 py-2">Business</th>
                 <th className="px-4 py-2">Invoice</th>
                 <th className="px-4 py-2">Reward</th>
+                <th className="px-4 py-2">Status</th>
                 <th className="px-4 py-2">Date</th>
               </tr>
             </thead>
@@ -167,8 +171,18 @@ export default function Profile() {
               {history.map((t) => (
                 <tr key={t.id} className="border-t border-ink-900/10">
                   <td className="px-4 py-2">{t.business_name}</td>
-                  <td className="px-4 py-2">{t.invoice_number}</td>
-                  <td className="px-4 py-2">+{t.reward_increment}</td>
+                  <td className="px-4 py-2 font-mono">{t.invoice_number}</td>
+                  <td className="px-4 py-2">
+                    {t.status === "approved" ? `+${t.reward_increment}` : "—"}
+                  </td>
+                  <td className="px-4 py-2">
+                    <StatusPill status={t.status} />
+                    {t.status === "rejected" && t.rejection_reason && (
+                      <span className="mt-1 block text-xs text-ink-800/60">
+                        {t.rejection_reason}
+                      </span>
+                    )}
+                  </td>
                   <td className="px-4 py-2">{fmtDate(t.created_at)}</td>
                 </tr>
               ))}
