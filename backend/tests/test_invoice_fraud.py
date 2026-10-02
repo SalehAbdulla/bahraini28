@@ -97,9 +97,9 @@ def test_duplicate_guard_is_case_insensitive(client, db):
 
 def test_total_daily_limit_blocks_directory_farming(client, db, monkeypatch):
     """With the total cap at 4, a 5th credit anywhere is refused."""
-    from app.core.config import get_settings
-
-    settings = get_settings()
+    # Patch the *app's* settings — the route and the service both read the
+    # injected settings object, so the deployment's real config is honoured.
+    settings = client.app.state.settings
     monkeypatch.setattr(settings, "DAILY_LIMIT_TOTAL", 4, raising=False)
     monkeypatch.setattr(TotalDailyLimitExceededError, "remaining", 0, raising=False)
 
