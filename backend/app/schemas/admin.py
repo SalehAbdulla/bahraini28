@@ -83,4 +83,6 @@ class DashboardMetrics(BaseModel):
     total_transactions: int
     transactions_today: int
     total_rewards_awarded: int
+    #: Submissions waiting in the receipt-review queue (Tier 2).
+    pending_reviews: int = 0
     recent_transactions: list[dict] = []
