@@ -1,8 +1,9 @@
 """End-to-end browser tests.
 
 Covers the volunteer journey (login -> first-login activation modal ->
-directory -> invoice submit -> profile reward) and the admin dashboard SSE
-feed (a purchase made while the dashboard is open is broadcast live).
+directory -> invoice + receipt submission -> pending -> admin approval ->
+spendable reward) and the admin dashboard SSE feed (a purchase made while the
+dashboard is open is broadcast live).
 
 Requires the fixtures in conftest.py, which boot the real backend + frontend.
 Run from the repo root:
@@ -16,6 +17,8 @@ from playwright.sync_api import Page, expect
 
 VOLUNTEER_EMAIL = "volunteer@example.com"
 VOLUNTEER_PASSWORD = "volunteer123"
+
+PENDING_MESSAGE = "Submitted — your reward is credited once the receipt is reviewed."
 
 
 def _login_as_volunteer(page: Page, app_url: str) -> None:
@@ -46,11 +49,30 @@ def _activate_if_needed(page: Page) -> None:
 
 
 def _submit_invoice(page: Page, prefix: str) -> str:
+    """Submit an invoice + receipt photo; the row must land *pending*."""
     invoice = f"{prefix}-{int(time.time() * 1000)}"
     page.fill("input[placeholder='Invoice number']", invoice)
+    page.set_input_files(
+        "#receipt",
+        files=[
+            {
+                "name": "receipt.png",
+                "mimeType": "image/png",
+                "buffer": b"\x89PNG\r\n\x1a\n" + b"\x00" * 512,
+            }
+        ],
+    )
     page.click("button:has-text('Submit invoice')")
-    expect(page.get_by_text("Invoice verified! +1 reward")).to_be_visible(timeout=10000)
+    expect(page.get_by_text(PENDING_MESSAGE, exact=False)).to_be_visible(timeout=10000)
     return invoice
+
+
+def _login_as_admin(page: Page, app_url: str) -> None:
+    page.goto(f"{app_url}/admin/login")
+    page.fill("#admin-username", "admin")
+    page.fill("#admin-password", "admin123")
+    page.click("button:has-text('Sign in to dashboard')")
+    expect(page.get_by_text("Admin Dashboard")).to_be_visible(timeout=10000)
 
 
 def test_volunteer_journey(browser, app_url: str) -> None:
@@ -71,14 +93,35 @@ def test_volunteer_journey(browser, app_url: str) -> None:
     first_card.click()
     expect(page.get_by_role("heading", name=business_name)).to_be_visible(timeout=10000)
 
-    # --- invoice submission ----------------------------------------------------
+    # --- invoice + receipt submission -> pending, nothing spendable yet ------
     invoice = _submit_invoice(page, "E2E")
 
-    # --- profile reflects the +1 reward and the history row --------------------
     page.goto(f"{app_url}/profile")
-    reward_card = page.locator("div").filter(has_text="Reward points").last
-    expect(reward_card).to_contain_text("1")
     expect(page.get_by_text(invoice)).to_be_visible()
+    approved_card = page.locator("div").filter(has_text="Approved rewards").last
+    expect(approved_card).to_contain_text("0")
+    pending_card = page.locator("div").filter(has_text="Awaiting review").last
+    expect(pending_card).to_contain_text("1")
+
+    # --- admin approves the receipt from the review queue -------------------
+    admin = context.new_page()
+    _login_as_admin(admin, app_url)
+    admin.goto(f"{app_url}/admin/reviews")
+    expect(admin.get_by_role("heading", name="Receipt review")).to_be_visible(timeout=10000)
+
+    row = admin.locator("tr", has_text=invoice)
+    expect(row).to_be_visible(timeout=10000)
+    row.get_by_role("button", name="Approve").click()
+    # Approving removes it from the *pending* queue.
+    expect(admin.locator("tr", has_text=invoice)).to_have_count(0, timeout=10000)
+
+    # --- the reward is now spendable ----------------------------------------
+    page.reload()
+    approved_card = page.locator("div").filter(has_text="Approved rewards").last
+    expect(approved_card).to_contain_text("1")
+    expect(
+        page.locator("tbody tr", has_text=invoice)
+    ).to_contain_text("approved", timeout=10000)
     context.close()
 
 
