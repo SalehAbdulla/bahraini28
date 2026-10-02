@@ -2,17 +2,24 @@
 
 ``Base.metadata.create_all`` creates *missing tables* but never alters an
 existing one, and this project ships no migration tool. This module applies the
-small, additive changes introduced by the Tier 1 anti-fraud work to databases
-that already exist, so a deploy needs no manual SQL:
+small, additive changes introduced by the anti-fraud work to databases that
+already exist, so a deploy needs no manual SQL:
 
+Tier 1 (``docs/ANTI_FRAUD_PLAN.md``)
 * ``businesses.invoice_pattern`` column (per-partner invoice regex).
 * ``transactions`` unique constraint widened from
   ``(user_id, business_id, invoice_number)`` to ``(business_id, invoice_number)``
   so an invoice can only ever be credited once per business, by anyone.
 
-Both steps are guarded by an inspector so they run at most once and are no-ops
-on a fresh database. Failures are swallowed and logged: a reconciliation
-problem must never stop the app from booting.
+Tier 2 (receipt proof + admin approval)
+* ``transactions.status`` / ``receipt_path`` / ``receipt_sha256`` /
+  ``reviewed_by`` / ``reviewed_at`` / ``rejection_reason`` columns, plus the
+  backfill that marks every pre-existing row ``approved`` (those rewards were
+  credited instantly under Tier 1 and must not disappear).
+
+Every step is guarded by an inspector so it runs at most once and is a no-op on
+a fresh database. Failures are swallowed and logged: a reconciliation problem
+must never stop the app from booting.
 """
 from __future__ import annotations
 
@@ -25,6 +32,18 @@ logger = logging.getLogger(__name__)
 _INVOICE_COLUMN = "invoice_pattern"
 _OLD_CONSTRAINT = "uq_user_business_invoice"
 _NEW_CONSTRAINT = "uq_business_invoice"
+
+#: Tier 2 columns added to ``transactions``: ``(name, type)``. ``reviewed_at``
+#: is rendered with the dialect's timestamp type and ``reviewed_by`` gains its
+#: foreign key only when ``admins`` already exists.
+_REVIEW_COLUMNS: tuple[tuple[str, str], ...] = (
+    ("status", "VARCHAR(16)"),
+    ("receipt_path", "VARCHAR(255)"),
+    ("receipt_sha256", "VARCHAR(64)"),
+    ("reviewed_by", "INTEGER"),
+    ("reviewed_at", "DATETIME"),
+    ("rejection_reason", "TEXT"),
+)
 
 
 def _quote(identifier: str) -> str:
@@ -102,9 +121,78 @@ def _widen_invoice_uniqueness(engine: Engine) -> None:
     logger.info("bootstrap: ensured unique(business_id, invoice_number) on transactions")
 
 
+def _ensure_review_columns(engine: Engine) -> None:
+    """Add the Tier 2 review lifecycle columns, then backfill legacy rows.
+
+    Existing rows were credited *instantly* under Tier 1, so they are stamped
+    ``approved`` with ``reviewed_at = created_at`` — otherwise every historical
+    reward would silently stop counting as spendable.
+    """
+    inspector = inspect(engine)
+    if "transactions" not in inspector.get_table_names():
+        return
+
+    present = {c["name"] for c in inspector.get_columns("transactions")}
+    tables = set(inspector.get_table_names())
+    timestamp_type = "TIMESTAMPTZ" if engine.dialect.name == "postgresql" else "DATETIME"
+    added: list[str] = []
+
+    with engine.begin() as conn:
+        for name, column_type in _REVIEW_COLUMNS:
+            if name in present:
+                continue
+            if name == "reviewed_at":
+                column_type = timestamp_type
+            elif name == "reviewed_by" and "admins" in tables:
+                # SQLite/Postgres both allow a REFERENCES clause on ADD COLUMN
+                # as long as the default is NULL, which is the case here.
+                column_type = f"{column_type} REFERENCES admins(id) ON DELETE SET NULL"
+            conn.execute(
+                text(
+                    f"ALTER TABLE transactions ADD COLUMN "
+                    f"{_quote(name)} {column_type}"
+                )
+            )
+            added.append(name)
+
+        # Mirror the model's ``index=True`` on status / receipt_sha256; on a
+        # fresh database ``create_all`` already created these exact names.
+        conn.execute(
+            text(
+                "CREATE INDEX IF NOT EXISTS ix_transactions_status "
+                "ON transactions (status)"
+            )
+        )
+        conn.execute(
+            text(
+                "CREATE INDEX IF NOT EXISTS ix_transactions_receipt_sha256 "
+                "ON transactions (receipt_sha256)"
+            )
+        )
+
+        # Backfill once — only meaningful on the boot that adds ``status``.
+        if "status" in added:
+            conn.execute(
+                text("UPDATE transactions SET status = 'approved' WHERE status IS NULL")
+            )
+            conn.execute(
+                text(
+                    "UPDATE transactions SET reviewed_at = created_at "
+                    "WHERE reviewed_at IS NULL"
+                )
+            )
+
+    if added:
+        logger.info("bootstrap: added transactions columns %s", ", ".join(added))
+
+
 def reconcile_schema(engine: Engine) -> None:
-    """Apply additive Tier 1 schema changes to an existing database."""
-    for step in (_ensure_invoice_pattern_column, _widen_invoice_uniqueness):
+    """Apply additive schema changes (Tier 1 + Tier 2) to an existing database."""
+    for step in (
+        _ensure_invoice_pattern_column,
+        _widen_invoice_uniqueness,
+        _ensure_review_columns,
+    ):
         try:
             step(engine)
         except Exception:  # noqa: BLE001 - never block startup on reconciliation
