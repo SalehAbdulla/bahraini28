@@ -44,9 +44,12 @@ export default {
       },
       fontFamily: {
         /*
-         * The brand script face (HOOKER) is self-hosted from docs/Fonts.zip and
-         * declared in index.css. Accent typography only — never body copy.
+         * Editorial serif for headline moments + the logo wordmark (Playfair
+         * Display, loaded in index.html). The brand script face (HOOKER) is
+         * self-hosted from docs/Fonts.zip and declared in index.css — accent
+         * typography only. Body copy stays on the system sans stack.
          */
+        serif: ['"Playfair Display"', "Georgia", "serif"],
         script: ['"Bahraini Script"', "cursive"],
       },
       backgroundImage: {
@@ -54,6 +57,28 @@ export default {
         "texture-mint": "url('/brand/texture-mint.jpg')",
         "texture-cream": "url('/brand/texture-cream.jpg')",
         "texture-ink": "url('/brand/texture-ink.jpg')",
+      },
+      boxShadow: {
+        card: "0 1px 3px 0 rgb(0 0 0 / 0.06), 0 0 0 1px rgb(0 0 0 / 0.04)",
+        "card-hover":
+          "0 8px 24px -4px rgb(0 0 0 / 0.10), 0 0 0 1px rgb(0 0 0 / 0.04)",
+        soft: "0 1px 3px 0 rgb(0 0 0 / 0.06), 0 1px 2px -1px rgb(0 0 0 / 0.06)",
+      },
+      keyframes: {
+        fadeIn: { "0%": { opacity: "0" }, "100%": { opacity: "1" } },
+        slideUp: {
+          "0%": { opacity: "0", transform: "translateY(10px)" },
+          "100%": { opacity: "1", transform: "translateY(0)" },
+        },
+        scaleIn: {
+          "0%": { opacity: "0", transform: "scale(0.97)" },
+          "100%": { opacity: "1", transform: "scale(1)" },
+        },
+      },
+      animation: {
+        "fade-in": "fadeIn 0.25s ease-out",
+        "slide-up": "slideUp 0.35s ease-out",
+        "scale-in": "scaleIn 0.2s ease-out",
       },
     },
   },
