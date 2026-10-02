@@ -38,6 +38,7 @@ export interface BusinessDetail {
   category_name: string;
   discount_percentage: number;
   description: string | null;
+  invoice_pattern: string | null;
   is_active: boolean;
   expiry_date: string;
   areas: BusinessAreaOut[];
@@ -78,6 +79,7 @@ export interface AdminBusinessOut {
   category_name: string | null;
   discount_percentage: number;
   description: string | null;
+  invoice_pattern: string | null;
   is_active: boolean;
   expiry_date: string;
   branches: Array<{
@@ -104,6 +106,8 @@ export interface TransactionOut {
 export interface TransactionCreatedOut extends TransactionOut {
   used_today: number;
   remaining_today: number;
+  used_today_total: number;
+  remaining_today_total: number;
   reward_points_balance: number;
 }
 
