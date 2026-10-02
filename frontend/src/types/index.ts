@@ -9,6 +9,8 @@ export interface UserProfile {
   expiry_date: string;
   is_active: boolean;
   reward_points: number;
+  /** Rewards waiting in the receipt-review queue (not spendable yet). */
+  pending_reward_points: number;
   must_change_password: boolean;
   created_at: string;
 }
@@ -94,6 +96,9 @@ export interface AdminBusinessOut {
   updated_at: string;
 }
 
+/** Receipt-review lifecycle (mirrors `models.transaction`). */
+export type TransactionStatus = "pending" | "approved" | "rejected";
+
 export interface TransactionOut {
   id: number;
   business_id: number;
@@ -101,6 +106,9 @@ export interface TransactionOut {
   invoice_number: string;
   reward_increment: number;
   created_at: string;
+  status: TransactionStatus;
+  /** Only ever populated on the volunteer's own history. */
+  rejection_reason: string | null;
 }
 
 export interface TransactionCreatedOut extends TransactionOut {
@@ -109,6 +117,13 @@ export interface TransactionCreatedOut extends TransactionOut {
   used_today_total: number;
   remaining_today_total: number;
   reward_points_balance: number;
+}
+
+export interface TransactionReviewOut extends TransactionOut {
+  user_id: number;
+  user_name: string;
+  receipt_url: string | null;
+  reviewed_at: string | null;
 }
 
 export interface Page<T> {
@@ -132,6 +147,8 @@ export interface DashboardMetrics {
   total_transactions: number;
   transactions_today: number;
   total_rewards_awarded: number;
+  /** Submissions waiting in the receipt-review queue (Tier 2). */
+  pending_reviews: number;
   recent_transactions: Array<{
     id: number;
     user_id: number;
@@ -140,6 +157,7 @@ export interface DashboardMetrics {
     business_name: string | null;
     invoice_number: string;
     reward_increment: number;
+    status: TransactionStatus;
     created_at: string;
   }>;
 }
