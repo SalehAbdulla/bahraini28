@@ -179,7 +179,7 @@ export default function Landing() {
             <p
               dir="rtl"
               lang="ar"
-              className="mt-5 text-lg leading-loose text-brand-300 sm:text-xl"
+              className="mt-5 max-w-xl text-right text-lg leading-loose text-brand-300 sm:text-xl"
             >
               شراكة مجتمعية معطاءة.. بين شغف مواطن، ووقفة وطن!
             </p>
