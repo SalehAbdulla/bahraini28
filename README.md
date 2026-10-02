@@ -31,12 +31,20 @@ Monorepo with two independent components:
   receipt cannot be shared between accounts and junk such as `"!!!"` is
   rejected. Accounts crediting an unusually high number of *distinct* partners
   in one day raise a `fraud_signal` on the admin dashboard.
-  See `docs/ANTI_FRAUD_PLAN.md`; real verification (receipt proof + admin
-  approval) is the planned **Tier 2** milestone.
+- **Receipt proof + admin approval (anti-fraud, Tier 2 — shipped)**: a
+  submission also carries a **receipt photo/PDF** (`POST /api/v1/transactions`
+  is multipart: `business_id`, `invoice_number`, `receipt`). The row is stored
+  as `pending` and credits **nothing**; an admin approves it from
+  `/admin/reviews` (`POST /api/v1/admin/transactions/{id}/approve`) before the
+  reward becomes spendable. Rejecting leaves the balance untouched and records
+  why. The same receipt image cannot be reused at one partner (per-partner
+  SHA-256 guard), and `pending` submissions still consume the daily caps.
+  Set `REQUIRE_RECEIPT_REVIEW=false` to fall back to Tier 1 (instant credit).
+  See `docs/ANTI_FRAUD_PLAN.md`.
 - **First-login profile activation**: new accounts force a name/email/password
   update before first use.
-- **Audit trail**: every manual reward adjustment is logged to
-  `reward_adjustments`.
+- **Audit trail**: every manual reward adjustment **and every invoice approval**
+  is logged to `reward_adjustments` (approvals as `invoice approval #<id>`).
 
 ---
 
@@ -129,10 +137,14 @@ so the dev proxy and the production reverse proxy need no extra config.
 ### Pages
 
 - Public: landing, directory (category/area/search filters), business detail
-  (discount %, branches, invoice submission), public transaction history.
-- Volunteer: profile + rewards cards + personal history, first-login
-  activation modal.
-- Admin: dashboard with KPIs + **SSE live purchase feed**, user management
+  (discount %, branches, invoice **+ receipt** submission), public transaction
+  history.
+- Volunteer: profile + rewards cards split into **approved (spendable)** and
+  **awaiting review**, personal history with per-row `pending`/`approved`/
+  `rejected` status, first-login activation modal.
+- Admin: dashboard with KPIs + **SSE live purchase feed** +
+  **receipt review queue (`/admin/reviews`: receipt thumbnail, approve/reject
+  with an optional reason)**, user management
   (CRUD / expiry override / reward adjustment / password reset / activate /
   deactivate), **business management (register / edit / logo upload /
   activate-deactivate partnerships with categories and multi-area
