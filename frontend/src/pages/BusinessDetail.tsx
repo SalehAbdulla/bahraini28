@@ -1,6 +1,6 @@
-import { useEffect, useState, type FormEvent } from "react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { api, RequestError } from "../api/client";
+import { api, apiUpload, RequestError } from "../api/client";
 import { useAuth } from "../auth/AuthContext";
 import type {
   BusinessDetail as BusinessDetailType,
@@ -20,6 +20,8 @@ export default function BusinessDetail() {
   const [notFound, setNotFound] = useState(false);
 
   const [invoice, setInvoice] = useState("");
+  const [receipt, setReceipt] = useState<File | null>(null);
+  const receiptInput = useRef<HTMLInputElement>(null);
   const [result, setResult] = useState<TransactionCreatedOut | null>(null);
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
@@ -39,16 +41,27 @@ export default function BusinessDetail() {
       navigate("/login");
       return;
     }
+    if (!receipt) {
+      setError("Attach a photo or PDF of your receipt.");
+      return;
+    }
     setError("");
     setResult(null);
     setBusy(true);
     try {
-      const res = await api<TransactionCreatedOut>("/transactions", {
-        method: "POST",
-        body: { business_id: businessId, invoice_number: invoice.trim() },
+      // Multipart: the receipt file travels with the invoice fields, and the
+      // reward is credited only after an admin has reviewed the receipt.
+      const res = await apiUpload<TransactionCreatedOut>("/transactions", receipt, {
+        fields: {
+          business_id: String(businessId),
+          invoice_number: invoice.trim(),
+        },
+        fileField: "receipt",
       });
       setResult(res);
       setInvoice("");
+      setReceipt(null);
+      if (receiptInput.current) receiptInput.current.value = "";
       setHistory((prev) => [
         {
           id: res.id,
@@ -57,6 +70,8 @@ export default function BusinessDetail() {
           invoice_number: res.invoice_number,
           reward_increment: res.reward_increment,
           created_at: res.created_at,
+          status: res.status,
+          rejection_reason: res.rejection_reason,
         },
         ...prev,
       ]);
@@ -123,27 +138,47 @@ export default function BusinessDetail() {
       <div className="mt-6 bg-white border border-ink-900/10 rounded-2xl p-6">
         <h2 className="font-serif text-xl font-normal text-ink-900">Submit an invoice</h2>
         <p className="mt-1 text-sm text-ink-800/70">
-          Enter the invoice number from your physical receipt to earn a reward.
-          Each invoice can be credited once, and there is a daily cap per partner
-          and overall (resets at midnight).
+          Enter the invoice number from your physical receipt and attach a photo
+          (or PDF) of that receipt. Each invoice can be credited once, there is a
+          daily cap per partner and overall (resets at midnight), and your reward
+          is credited once the receipt has been reviewed.
         </p>
-        <form onSubmit={submitInvoice} className="mt-4 flex gap-3 flex-wrap">
-          <input
-            className="input-field flex-1 min-w-[220px]"
-            placeholder="Invoice number"
-            required
-            minLength={3}
-            maxLength={64}
-            value={invoice}
-            onChange={(e) => setInvoice(e.target.value)}
-          />
-          <button type="submit" disabled={busy} className="btn-primary">
-            {busy ? "Submitting…" : "Submit invoice"}
-          </button>
+        <form onSubmit={submitInvoice} className="mt-4 space-y-3">
+          <div className="flex gap-3 flex-wrap">
+            <input
+              className="input-field flex-1 min-w-[220px]"
+              placeholder="Invoice number"
+              required
+              minLength={3}
+              maxLength={64}
+              value={invoice}
+              onChange={(e) => setInvoice(e.target.value)}
+            />
+            <button type="submit" disabled={busy} className="btn-primary">
+              {busy ? "Submitting…" : "Submit invoice"}
+            </button>
+          </div>
+          <div>
+            <label htmlFor="receipt" className="block text-sm font-medium text-ink-800">
+              Receipt photo or PDF
+            </label>
+            <input
+              id="receipt"
+              ref={receiptInput}
+              type="file"
+              accept="image/png,image/jpeg,image/webp,application/pdf"
+              required
+              onChange={(e) => setReceipt(e.target.files?.[0] ?? null)}
+              className="mt-1 block w-full text-sm text-ink-800/80 file:mr-3 file:border file:border-ink-900/15 file:bg-white file:px-3 file:py-1.5 file:text-sm file:font-semibold file:text-ink-900 hover:file:bg-ink-900/5"
+            />
+            <p className="mt-1 text-xs text-ink-800/60">PNG, JPEG, WebP or PDF.</p>
+          </div>
         </form>
         {result && (
           <div className="mt-3 text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-lg px-3 py-2 text-sm">
-            ✅ Invoice verified! +{result.reward_increment} reward ·{" "}
+            {result.status === "approved"
+              ? `✅ Invoice verified! +${result.reward_increment} reward · `
+              : "🧾 Submitted — your reward is credited once the receipt is reviewed. · "}
             {result.remaining_today} uses left today here ·{" "}
             {result.remaining_today_total} left today overall.
           </div>
