@@ -30,53 +30,55 @@ column, widens the uniqueness rule) since the project ships no migration tool.
 **Honest limit:** Tier 1 makes farming impractical but is still trust-based —
 it cannot prove the receipt exists.
 
-## Tier 2 — next milestone (real verification)
+## Tier 2 — shipped (receipt proof + admin approval)
 
-> **Execution plan:** the concrete, step-by-step build plan is in
-> [`docs/NEXT_SESSION_TIER2.md`](./NEXT_SESSION_TIER2.md) — read that before
-> starting this tier.
+Goal achieved: a reward is now *proven*, not asserted. A volunteer attaches a
+photo/PDF of the receipt, and an admin approves it before any reward is
+credited.
 
-Goal: a reward is *proven*, not asserted.
+| Control | Where | Effect |
+| --- | --- | --- |
+| Receipt evidence on submission | `routes/transactions.py` (multipart: `business_id`, `invoice_number`, `receipt`) | The receipt file is written through the **single shared upload helper** `services/uploads.py::store_upload` (same `UPLOAD_DIR` / `MAX_UPLOAD_SIZE_MB` / `FileTooLargeError` / `UnsupportedFileTypeError` as the logo upload); PNG/JPEG/WebP/PDF only. |
+| Receipt hash de-duplication | `Transaction.receipt_sha256` + `services/transactions.submit_invoice` | The same image cannot back two invoices at one partner (409 `duplicate_invoice`). |
+| Review lifecycle | `Transaction.status` (`pending` / `approved` / `rejected`), `receipt_path`, `receipt_sha256`, `reviewed_by`, `reviewed_at`, `rejection_reason` | A submission lands `pending` and **credits nothing**. |
+| Approval is the only credit path | `services/transactions.approve_transaction` | `+reward_increment` on `User.reward_points` **and** a `RewardAdjustment` audit row (`delta=+1`, `reason="invoice approval #<id>"`, `admin_id`). Re-approving a decided row → 409 `transaction_not_pending`. |
+| Rejection touches nothing | `services/transactions.reject_transaction` | Stores `rejection_reason`; `reward_points` is never modified. |
+| Admin review API | `GET /api/v1/admin/transactions/review`, `POST /api/v1/admin/transactions/{id}/approve`, `POST /api/v1/admin/transactions/{id}/reject` | Queue is oldest-first; approve/reject return `TransactionReviewOut` (volunteer, receipt URL, status, reviewer timestamp). |
+| Real-time review | SSE `invoice_reviewed` (in addition to `purchase` on submit) | Open admin tabs refresh the queue immediately. |
+| Review queue UI | `/admin/reviews` (`frontend/src/pages/AdminReviews.tsx`) | Receipt thumbnail → click for the full image, invoice, volunteer, partner, submitted time, Approve / Reject + optional reason. |
+| Volunteer-facing split | `UserProfile.pending_reward_points`, profile page | `reward_points` is the **approved/spendable** balance; "Awaiting review" shows what is queued. Per-row `status`, and the volunteer is told *why* a receipt was rejected (`rejection_reason` on their own history only — never on the public per-business list). |
+| Caps cannot be bypassed by queueing | `count_uses_today*` filter on `COUNTED_STATUSES` (`pending`, `approved`) | `pending` submissions consume a daily slot; a `rejected` one does **not** (an honest mistake shouldn't cost a volunteer their quota). |
+| Migration for existing databases | `app/db/bootstrap.py::_ensure_review_columns` | Adds the six columns (guarded), creates the `status`/`receipt_sha256` indexes, and **backfills** every pre-existing row to `approved` with `reviewed_at = created_at`, so no historical reward is lost. |
+| Rollout switch | `core/config.py::REQUIRE_RECEIPT_REVIEW: bool = True` | `False` restores Tier 1 exactly: receipt optional, instant credit. The JSON submit body is still accepted in that mode, so an older client keeps working. |
 
-1. **Receipt evidence**
-   - Extend `InvoiceSubmitRequest` to a multipart submission: `business_id`,
-     `invoice_number`, `receipt` (image/PDF).
-   - Reuse the existing upload pipeline (`UPLOAD_DIR`, `MAX_UPLOAD_SIZE_MB`,
-     `UnsupportedFileTypeError` / `FileTooLargeError`).
+### Decisions taken for this tier
 
-2. **Pending → approved lifecycle**
-   - Add `Transaction.status` (`pending` / `approved` / `rejected`),
-     `receipt_path`, `reviewed_by`, `reviewed_at`.
-   - On submit: create the row as `pending`; **do not** touch
-     `user.reward_points`.
-   - New migration step in `app/db/bootstrap.py` for the added columns.
-
-3. **Admin review**
-   - `POST /admin/transactions/{id}/approve` and `.../reject`.
-   - On approve: increment `reward_points` and write a `RewardAdjustment`
-     audit row (the table already exists) — approvals must be auditable.
-   - UI: a review queue in the admin dashboard, reusing the existing SSE
-     `purchase` alert; show the receipt thumbnail beside the invoice number.
-
-4. **Volunteer-facing**
-   - Profile/history show `pending` vs `approved`, with the running **approved**
-     balance as the spendable one.
-   - BusinessDetail copy explains "your reward is credited after review".
-
-5. **Anti-abuse for Tier 2**
-   - Hash the receipt (e.g. SHA-256) and reject duplicate hashes per partner.
-   - Rate-limit submissions per user per hour.
-
-6. **Config & settings**
-   - `REQUIRE_RECEIPT_REVIEW: bool = True` so a deployment can run Tier 1 only
-     while partners are onboarded.
+1. **Who reviews** — any authenticated admin. There is no separate reviewer
+   role; every decision is attributable through `reviewed_by` + the audit row.
+2. **SLA / reminders** — none automated in this tier. The queue is oldest-first
+   and the dashboard shows an "Awaiting review" count.
+3. **Re-submission after rejection** — **not allowed for the same invoice
+   number**: the Tier 1 `UNIQUE(business_id, invoice_number)` guard stays, which
+   is what stops a receipt being recycled. A rejected row also frees its daily
+   slot so the volunteer can submit a *different*, correct invoice.
+4. **Telling the volunteer why** — yes, the rejection reason is shown on their
+   own history (it is never exposed on the public business history).
 
 ### Acceptance criteria
 
-- A submission without a readable receipt cannot reach `approved`.
-- `reward_points` changes only through `approve` (or an admin adjustment).
-- Every approval is traceable to an admin id and timestamp.
-- Existing Tier 1 tests keep passing with `REQUIRE_RECEIPT_REVIEW=False`.
+- A submission without a readable receipt cannot reach `approved` (the receipt
+  is required while `REQUIRE_RECEIPT_REVIEW=True`).
+- `reward_points` changes only through `approve_transaction` (or an admin
+  manual adjustment), plus the documented Tier-1 fallback when
+  `REQUIRE_RECEIPT_REVIEW=False`.
+- Every approval is traceable to an admin id, a timestamp and an audit row.
+- Legacy transactions are backfilled to `approved` (no rewards lost).
+- The Tier 1 suite keeps passing with `REQUIRE_RECEIPT_REVIEW=False`.
+
+**Honest limit:** Tier 2 makes fabrication expensive (a real-looking receipt
+photo *and* a matching unused invoice number, once per partner) but a
+determined volunteer can still photograph a genuine receipt and re-type its
+number. Only Tier 3 makes fabrication impossible.
 
 ## Tier 3 — strongest (requires partner cooperation)
 
