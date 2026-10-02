@@ -34,6 +34,25 @@ Monorepo with two independent components:
 
 ---
 
+## Run locally (hot reload)
+
+`run.sh` starts both servers, each watching its own source tree:
+
+```bash
+./run.sh            # API on :8000 + SPA on :5173
+./run.sh --seed     # ...plus demo businesses and a volunteer login
+./run.sh --areas    # ...plus the real Bahrain area list (idempotent)
+./run.sh --help     # all flags: --backend-only, --frontend-only, --web-port
+```
+
+It reuses the repo `.venv` (creating it and installing `requirements-dev.txt` /
+`npm ci` only when needed), creates `backend/.env` from the example on first
+run, and stops both servers on Ctrl-C. `WEB_PORT` overrides the SPA port; leave
+`API_PORT` at 8000 unless you also change the proxy target in
+`frontend/vite.config.ts`.
+
+---
+
 ## Backend
 
 ### Tech notes
