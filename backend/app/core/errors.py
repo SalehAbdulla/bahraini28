@@ -177,3 +177,17 @@ class DailyLimitExceededError(AppError):
     message = "The daily usage limit for this business has been exhausted."
 
     remaining = 0
+
+
+class TotalDailyLimitExceededError(AppError):
+    status_code = 429
+    code = "total_daily_limit_exceeded"
+    message = "You have reached the total daily reward limit across all partners."
+
+    remaining = 0
+
+
+class InvoiceFormatError(AppError):
+    status_code = 400
+    code = "invalid_invoice_format"
+    message = "The invoice number does not match the expected format for this partner."
