@@ -26,6 +26,7 @@ class BusinessDetail(ORMModel):
     category_name: str
     discount_percentage: int
     description: str | None = None
+    invoice_pattern: str | None = None
     is_active: bool
     expiry_date: datetime
     areas: list[BusinessAreaOut] = []
@@ -115,6 +116,7 @@ class AdminBusinessCreate(BaseModel):
     category_id: int = Field(gt=0)
     discount_percentage: int = Field(ge=0, le=100)
     description: str | None = Field(None, max_length=2000)
+    invoice_pattern: str | None = Field(None, max_length=160)
     expiry_date: datetime
     is_active: bool = True
     branches: list[BusinessBranchIn] = []
@@ -130,6 +132,7 @@ class AdminBusinessUpdate(BaseModel):
     category_id: int | None = Field(None, gt=0)
     discount_percentage: int | None = Field(None, ge=0, le=100)
     description: str | None = None
+    invoice_pattern: str | None = Field(None, max_length=160)
     expiry_date: datetime | None = None
     is_active: bool | None = None
     branches: list[BusinessBranchIn] | None = None
@@ -144,6 +147,7 @@ class AdminBusinessOut(ORMModel):
     category_name: str | None = None
     discount_percentage: int
     description: str | None = None
+    invoice_pattern: str | None = None
     is_active: bool
     expiry_date: datetime
     branches: list[BusinessBranchOut] = []
