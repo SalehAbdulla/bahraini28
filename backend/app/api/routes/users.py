@@ -4,9 +4,10 @@ from __future__ import annotations
 import math
 
 from fastapi import APIRouter, Query
+from sqlalchemy.orm import Session
 
 from app.api.deps import CurrentUser, DbSession
-from app.models import Transaction
+from app.models import Transaction, User
 from app.schemas.common import Page
 from app.schemas.transaction import TransactionOut
 from app.schemas.user import UpdateMeRequest, UserProfile
@@ -17,10 +18,32 @@ from app.services import users as user_service
 router = APIRouter(prefix="/users", tags=["Users"])
 
 
+def _profile_out(db: Session, user: User) -> UserProfile:
+    """Profile payload with the split reward balance.
+
+    ``reward_points`` is the approved (spendable) balance; the amounts still
+    waiting in the review queue are reported separately so the UI never shows a
+    volatile number as if it were spendable.
+    """
+    return UserProfile(
+        id=user.id,
+        cpr=user.cpr,
+        email=user.email,
+        name=user.name,
+        phone=user.phone,
+        expiry_date=user.expiry_date,
+        is_active=user.is_active,
+        reward_points=user.reward_points,
+        pending_reward_points=tx_service.pending_rewards(db, user.id),
+        must_change_password=user.must_change_password,
+        created_at=user.created_at,
+    )
+
+
 @router.get("/me", response_model=UserProfile)
-def get_my_profile(user: CurrentUser):
-    """Personal credentials, membership status, and reward balance."""
-    return user
+def get_my_profile(user: CurrentUser, db: DbSession):
+    """Personal credentials, membership status, and reward balances."""
+    return _profile_out(db, user)
 
 
 @router.patch("/me", response_model=UserProfile)
@@ -33,7 +56,7 @@ def update_my_profile(payload: UpdateMeRequest, user: CurrentUser, db: DbSession
         email=str(payload.email) if payload.email else None,
         phone=payload.phone,
     )
-    return updated
+    return _profile_out(db, updated)
 
 
 @router.get("/me/transactions", response_model=Page[TransactionOut])
@@ -68,6 +91,10 @@ def _tx_page(
                 invoice_number=t.invoice_number,
                 reward_increment=t.reward_increment,
                 created_at=t.created_at,
+                # The volunteer is told *why* a receipt was rejected (their own
+                # history only — the public per-business list omits the reason).
+                status=t.status,
+                rejection_reason=t.rejection_reason,
             )
             for t in items
         ],
