@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import os
 import tempfile
+import uuid as _uuid
 from datetime import datetime, timedelta, timezone
 from typing import Generator
 
@@ -23,6 +24,11 @@ from app.models import Admin, Area, Business, BusinessArea, Category, User
 TEST_TZ = "UTC"
 TEST_LIMIT = 3
 TEST_SECRET = "test-secret-key"
+# The Tier 1 daily-limit tests use a small per-business cap; keep the total
+# ceiling and the fraud threshold high so they never interfere with tests that
+# only mean to exercise the per-business rule.
+TEST_TOTAL_LIMIT = 1000
+TEST_FRAUD_THRESHOLD = 1000
 
 # Logo-upload tests write real files; keep them out of the repo tree.
 TEST_UPLOAD_DIR = tempfile.mkdtemp(prefix="bahraini28-test-uploads-")
@@ -40,6 +46,8 @@ def make_test_settings() -> Settings:
         JWT_ALGORITHM="HS256",
         DEFAULT_TIMEZONE=TEST_TZ,
         DAILY_LIMIT_PER_BUSINESS=TEST_LIMIT,
+        DAILY_LIMIT_TOTAL=TEST_TOTAL_LIMIT,
+        FRAUD_DISTINCT_BUSINESSES_PER_DAY=TEST_FRAUD_THRESHOLD,
         SEED_DEFAULT_ADMIN=True,
         ADMIN_INITIAL_USERNAME="admin",
         ADMIN_INITIAL_PASSWORD="admin123",
@@ -99,8 +107,12 @@ def make_user(db, *, cpr="100000000001", email="user@example.com", password="use
     return user
 
 
-def make_business(db, *, name="Test Business", cr="CR-TEST-1", discount=20,
+def make_business(db, *, name="Test Business", cr=None, discount=20,
                   category=None, area=None, is_active=True, expiry_days=365) -> Business:
+    # Default to a unique CR so additional businesses in one test never collide
+    # with the unique commercial-registration constraint.
+    if cr is None:
+        cr = f"CR-{_uuid.uuid4().hex[:10]}"
     if category is None:
         category = db.scalar(select(Category).where(Category.slug == "test-cat"))
         if category is None:
