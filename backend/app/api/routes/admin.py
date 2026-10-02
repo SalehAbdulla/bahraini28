@@ -2,14 +2,12 @@
 from __future__ import annotations
 
 import math
-import uuid
 from pathlib import Path
 
 from fastapi import APIRouter, File, Query, UploadFile
 
 from app.api.deps import AppSettings, CurrentAdmin, DbSession
-from app.core.errors import FileTooLargeError, UnsupportedFileTypeError
-from app.models import Business, User
+from app.models import Business, Transaction, User
 from app.schemas.admin import (
     AdminCreateRequest,
     AdminUpdateRequest,
@@ -33,10 +31,17 @@ from app.schemas.business import (
     CategoryUpdate,
 )
 from app.schemas.common import Page
-from app.schemas.transaction import TransactionOut
+from app.schemas.transaction import (
+    RejectTransactionRequest,
+    TransactionOut,
+    TransactionReviewOut,
+)
 from app.services import admin as admin_service
 from app.services import businesses as business_service
+from app.services import transactions as tx_service
 from app.services import users as user_service
+from app.services.notifications import bus
+from app.services.uploads import ALLOWED_IMAGE_TYPES, store_upload
 
 router = APIRouter(prefix="/admin", tags=["Admin"])
 
@@ -251,6 +256,8 @@ def transaction_ledger(
                 invoice_number=t.invoice_number,
                 reward_increment=t.reward_increment,
                 created_at=t.created_at,
+                status=t.status,
+                rejection_reason=t.rejection_reason,
             )
             for t in items
         ],
@@ -259,6 +266,90 @@ def transaction_ledger(
         page_size=page_size,
         pages=math.ceil(total / page_size) if total else 0,
     )
+
+
+# --- Invoice review queue (Tier 2) --------------------------------------------
+
+
+def _review_out(t: Transaction) -> TransactionReviewOut:
+    return TransactionReviewOut(
+        id=t.id,
+        business_id=t.business_id,
+        business_name=t.business.name if t.business else None,
+        invoice_number=t.invoice_number,
+        reward_increment=t.reward_increment,
+        created_at=t.created_at,
+        status=t.status,
+        rejection_reason=t.rejection_reason,
+        user_id=t.user_id,
+        user_name=t.user.name if t.user else None,
+        receipt_url=t.receipt_path,
+        reviewed_at=t.reviewed_at,
+    )
+
+
+@router.get("/transactions/review", response_model=Page[TransactionReviewOut])
+def review_queue(
+    db: DbSession,
+    admin: CurrentAdmin,
+    status: str | None = Query("pending", pattern="^(pending|approved|rejected|all)$"),
+    page: int = Query(1, ge=1),
+    page_size: int = Query(12, ge=1, le=100),
+):
+    """Receipt-review queue — oldest submission first, so nothing is starved."""
+    items, total = tx_service.paginate_for_review(
+        db, status=None if status == "all" else status, page=page, page_size=page_size
+    )
+    return Page[TransactionReviewOut](
+        items=[_review_out(t) for t in items],
+        total=total,
+        page=page,
+        page_size=page_size,
+        pages=math.ceil(total / page_size) if total else 0,
+    )
+
+
+@router.post("/transactions/{transaction_id}/approve", response_model=TransactionReviewOut)
+async def approve_transaction(transaction_id: int, db: DbSession, admin: CurrentAdmin):
+    """Approve a pending submission: credit the reward + write an audit row."""
+    transaction = tx_service.get_transaction_or_404(db, transaction_id)
+    transaction = tx_service.approve_transaction(db, admin=admin, transaction=transaction)
+    await bus.publish(
+        "invoice_reviewed",
+        {
+            "transaction_id": transaction.id,
+            "status": transaction.status,
+            "user_id": transaction.user_id,
+            "reviewed_by": admin.id,
+            "reviewed_at": transaction.reviewed_at,
+        },
+    )
+    return _review_out(transaction)
+
+
+@router.post("/transactions/{transaction_id}/reject", response_model=TransactionReviewOut)
+async def reject_transaction(
+    transaction_id: int,
+    payload: RejectTransactionRequest,
+    db: DbSession,
+    admin: CurrentAdmin,
+):
+    """Reject a pending submission. Reward points are never touched."""
+    transaction = tx_service.get_transaction_or_404(db, transaction_id)
+    transaction = tx_service.reject_transaction(
+        db, admin=admin, transaction=transaction, reason=payload.reason
+    )
+    await bus.publish(
+        "invoice_reviewed",
+        {
+            "transaction_id": transaction.id,
+            "status": transaction.status,
+            "user_id": transaction.user_id,
+            "reviewed_by": admin.id,
+            "reviewed_at": transaction.reviewed_at,
+        },
+    )
+    return _review_out(transaction)
 
 
 # --- Business management ------------------------------------------------------
@@ -351,14 +442,6 @@ def update_business(
     return _admin_business_out(business_service.get_business_full(db, business_id))
 
 
-_ALLOWED_LOGO_TYPES = {
-    "image/png": ".png",
-    "image/jpeg": ".jpg",
-    "image/gif": ".gif",
-    "image/webp": ".webp",
-}
-
-
 @router.post("/businesses/{business_id}/logo", response_model=AdminBusinessOut)
 async def upload_business_logo(
     business_id: int,
@@ -373,28 +456,20 @@ async def upload_business_logo(
     """
     business = business_service.get_business_or_404(db, business_id)
 
-    ext = _ALLOWED_LOGO_TYPES.get((file.content_type or "").lower())
-    if ext is None:
-        raise UnsupportedFileTypeError
-
-    max_bytes = settings.MAX_UPLOAD_SIZE_MB * 1024 * 1024
-    payload = await file.read(max_bytes + 1)
-    if len(payload) > max_bytes:
-        raise FileTooLargeError(
-            message=f"Logo exceeds the {settings.MAX_UPLOAD_SIZE_MB} MB limit."
-        )
-
-    upload_dir = Path(settings.UPLOAD_DIR)
-    upload_dir.mkdir(parents=True, exist_ok=True)
-    filename = f"b{business_id}-{uuid.uuid4().hex[:12]}{ext}"
-    (upload_dir / filename).write_bytes(payload)
+    logo_url, _sha256 = await store_upload(
+        file,
+        settings=settings,
+        allowed_types=ALLOWED_IMAGE_TYPES,
+        prefix=f"b{business_id}",
+        label="Logo",
+    )
 
     if business.logo_path:
-        old = upload_dir / Path(business.logo_path).name
+        old = Path(settings.UPLOAD_DIR) / Path(business.logo_path).name
         if old.exists():
             old.unlink()
 
-    business.logo_path = f"/uploads/{filename}"
+    business.logo_path = logo_url
     db.commit()
     db.expire(business)
     return _admin_business_out(business_service.get_business_full(db, business_id))
