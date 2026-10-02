@@ -57,9 +57,14 @@ export default function Login() {
 
   return (
     <div className="max-w-md mx-auto mt-8">
-      <div className="bg-white border border-slate-200 rounded-2xl shadow-sm p-8">
-        <h1 className="text-2xl font-bold text-slate-900">Welcome back</h1>
-        <p className="mt-1 text-sm text-slate-500">
+      <div className="bg-white border border-ink-900/10 rounded-2xl p-8">
+        <p className="text-xs font-semibold uppercase tracking-[0.18em] text-brand-600/80">
+          Member sign in
+        </p>
+        <h1 className="mt-3 font-serif text-3xl font-normal tracking-[-0.015em] text-ink-900">
+          Welcome back
+        </h1>
+        <p className="mt-1 text-sm text-ink-800/60">
           Login with your email or CPR number.
         </p>
         <div className="mt-4 text-xs font-semibold text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
@@ -68,7 +73,7 @@ export default function Login() {
         </div>
         <form onSubmit={submitLogin} className="mt-6 space-y-4" noValidate>
           <div>
-            <label htmlFor="identifier" className="block text-sm font-medium text-slate-700">
+            <label htmlFor="identifier" className="block text-sm font-medium text-ink-800">
               Email or CPR
             </label>
             <input
@@ -83,7 +88,7 @@ export default function Login() {
             />
           </div>
           <div>
-            <label htmlFor="password" className="block text-sm font-medium text-slate-700">
+            <label htmlFor="password" className="block text-sm font-medium text-ink-800">
               Password
             </label>
             <input
@@ -134,15 +139,17 @@ interface ActivationModalProps {
 
 function ActivationModal(props: ActivationModalProps) {
   return (
-    <div className="fixed inset-0 z-50 bg-slate-900/40 grid place-items-center p-4">
-      <div className="bg-white rounded-2xl border border-slate-200 shadow-xl p-8 max-w-md w-full">
-        <h2 className="text-xl font-bold text-slate-900">Set up your profile</h2>
-        <p className="mt-1 text-sm text-slate-500">
+    <div className="fixed inset-0 z-50 bg-ink-900/40 grid place-items-center p-4">
+      <div className="bg-white rounded-2xl border border-ink-900/10 shadow-xl p-8 max-w-md w-full">
+        <h2 className="font-serif text-xl font-normal tracking-[-0.015em] text-ink-900">
+          Set up your profile
+        </h2>
+        <p className="mt-1 text-sm text-ink-800/60">
           For security, please update your name, email and password to continue.
         </p>
         <form onSubmit={props.onSubmit} className="mt-6 space-y-4" noValidate>
           <div>
-            <label className="block text-sm font-medium text-slate-700">Full name</label>
+            <label className="block text-sm font-medium text-ink-800">Full name</label>
             <input
               className="input-field"
               required
@@ -152,7 +159,7 @@ function ActivationModal(props: ActivationModalProps) {
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-slate-700">Email address</label>
+            <label className="block text-sm font-medium text-ink-800">Email address</label>
             <input
               type="email"
               className="input-field"
@@ -162,7 +169,7 @@ function ActivationModal(props: ActivationModalProps) {
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-slate-700">New password</label>
+            <label className="block text-sm font-medium text-ink-800">New password</label>
             <input
               type="password"
               className="input-field"
