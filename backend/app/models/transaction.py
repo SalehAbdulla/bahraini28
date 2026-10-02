@@ -23,10 +23,13 @@ def _utcnow() -> datetime:
 class Transaction(Base):
     __tablename__ = "transactions"
     __table_args__ = (
-        # Prevent submitting the same invoice twice for the same business.
+        # An invoice may only ever be credited ONCE per business — by anyone.
+        # Scoping this to (user_id, business_id, invoice) was the fraud hole:
+        # a receipt could be shared across accounts, and fabricated numbers
+        # were accepted outright.
         UniqueConstraint(
-            "user_id", "business_id", "invoice_number",
-            name="uq_user_business_invoice",
+            "business_id", "invoice_number",
+            name="uq_business_invoice",
         ),
     )
 
