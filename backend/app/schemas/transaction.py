@@ -27,4 +27,6 @@ class TransactionCreatedOut(TransactionOut):
 
     used_today: int
     remaining_today: int
+    used_today_total: int
+    remaining_today_total: int
     reward_points_balance: int
