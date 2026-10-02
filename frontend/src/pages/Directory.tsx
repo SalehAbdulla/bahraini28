@@ -47,8 +47,13 @@ export default function Directory() {
     <>
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-extrabold text-slate-900">Partner Directory</h1>
-          <p className="mt-1 text-slate-500 text-sm">
+          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-brand-600/80">
+            Directory
+          </p>
+          <h1 className="mt-2 font-serif text-3xl font-normal tracking-[-0.015em] text-ink-900 sm:text-4xl">
+            Partner directory
+          </h1>
+          <p className="mt-2 text-sm text-ink-800/70">
             Discounted businesses across Bahrain — filtered by category and area.
           </p>
         </div>
@@ -84,9 +89,9 @@ export default function Directory() {
       </div>
 
       {loading ? (
-        <p className="mt-10 text-slate-400 text-center py-16">Loading…</p>
+        <p className="mt-10 text-ink-800/50 text-center py-16">Loading…</p>
       ) : items.length === 0 ? (
-        <p className="mt-10 text-slate-400 text-center py-16">
+        <p className="mt-10 text-ink-800/50 text-center py-16">
           No businesses match your filters.
         </p>
       ) : (
