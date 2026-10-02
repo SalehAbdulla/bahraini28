@@ -11,6 +11,7 @@ interface PurchaseAlert {
   business_name: string | null;
   invoice_number: string;
   reward_increment: number;
+  status: string;
   created_at: string;
 }
 
@@ -62,6 +63,7 @@ export default function AdminDashboard() {
         { label: "All transactions", value: metrics.total_transactions, cls: "text-slate-900" },
         { label: "Businesses", value: metrics.total_businesses, cls: "text-slate-900" },
         { label: "Rewards awarded", value: metrics.total_rewards_awarded, cls: "text-amber-600" },
+        { label: "Awaiting review", value: metrics.pending_reviews, cls: "text-brand-600" },
       ]
     : [];
 
@@ -75,6 +77,7 @@ export default function AdminDashboard() {
           </p>
         </div>
         <div className="flex gap-2 sm:ml-auto">
+          <Link to="/admin/reviews" className="btn-secondary">Receipt review</Link>
           <Link to="/admin/users" className="btn-secondary">Users</Link>
           <Link to="/admin/businesses" className="btn-secondary">Businesses</Link>
           <Link to="/admin/catalog" className="btn-secondary">Areas &amp; Categories</Link>
