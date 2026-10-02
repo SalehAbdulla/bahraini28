@@ -27,6 +27,9 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                 here, 44px and 56px on the landing page — at up to 4× DPR, so
                 the 480px master is kept in the repo but never shipped. */}
             <img src="/brand/logo-sm.png" alt="Bahraini 28" className="h-9 w-auto" />
+            <span className="hidden whitespace-nowrap font-serif text-lg font-medium tracking-tight text-ink-900 sm:inline">
+              Bahraini <span className="text-brand-600">28</span>
+            </span>
           </Link>
           <div className="flex items-center gap-2 sm:gap-3">
             <NavLink to="/directory" className={navLink}>
