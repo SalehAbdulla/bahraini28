@@ -2,18 +2,63 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ---------------------------------------------------------------------------
+ * Brand typography
+ * ---------------------------------------------------------------------------
+ * "Bahraini Script" is the HOOKER face used throughout the official Bahraini 28
+ * identity deck (it sets "Bahraini 28", "Hello Bahrainies!" and "Soon!").
+ * The .otf ships in docs/Fonts.zip and is self-hosted from public/brand/fonts
+ * so the rendered result matches the source artwork exactly.
+ * Body copy deliberately stays on the system sans stack.
+ */
+@font-face {
+  font-family: "Bahraini Script";
+  src: url("/brand/fonts/HOOKER.otf") format("opentype");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@layer base {
+  body {
+    /* Warm brand "paper" rather than a cool grey. */
+    @apply bg-cream-50 text-ink-900 antialiased;
+  }
+  ::selection {
+    @apply bg-brand-200 text-ink-900;
+  }
+}
+
 @layer components {
   .input-field {
     @apply w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500;
   }
+  /* brand-700 keeps white button text at 4.7:1 (WCAG AA). */
   .btn-primary {
-    @apply inline-flex items-center justify-center px-4 py-2 rounded-lg bg-brand-600 text-white text-sm font-semibold hover:bg-brand-700 disabled:opacity-50 disabled:cursor-not-allowed transition;
+    @apply inline-flex items-center justify-center px-4 py-2 rounded-lg bg-brand-700 text-white text-sm font-semibold hover:bg-brand-800 disabled:opacity-50 disabled:cursor-not-allowed transition;
   }
   .btn-secondary {
     @apply inline-flex items-center justify-center px-4 py-2 rounded-lg border border-slate-300 bg-white text-slate-700 text-sm font-semibold hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition;
   }
+  /* For use on the dark brand canvas (ink-900). */
+  .btn-cream {
+    @apply inline-flex items-center justify-center px-5 py-2.5 rounded-lg bg-cream-100 text-ink-900 text-sm font-semibold hover:bg-cream-200 disabled:opacity-50 disabled:cursor-not-allowed transition;
+  }
+  .btn-ghost-light {
+    @apply inline-flex items-center justify-center px-5 py-2.5 rounded-lg border border-cream-100/40 text-cream-100 text-sm font-semibold hover:bg-cream-100/10 disabled:opacity-50 disabled:cursor-not-allowed transition;
+  }
+  .card {
+    @apply bg-white border border-ink-900/10 rounded-2xl shadow-sm;
+  }
+  /* Small uppercase label used above headlines. */
+  .eyebrow {
+    @apply inline-block rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-widest;
+  }
 }
 
-body {
-  @apply bg-slate-50 text-slate-800 antialiased;
+/* The dot-grid motif from the identity deck's cover and closing plates.
+   Coloured via `currentColor`, e.g. `text-brand-500/25`. */
+.dot-grid {
+  background-image: radial-gradient(currentColor 1.4px, transparent 1.5px);
+  background-size: 18px 18px;
 }
