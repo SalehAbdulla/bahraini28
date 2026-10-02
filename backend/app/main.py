@@ -17,6 +17,7 @@ from app.api.routes import admin, auth, businesses, notifications, transactions,
 from app.core.config import Settings, get_settings
 from app.core.errors import AppError
 from app.db.base import Base
+from app.db.bootstrap import reconcile_schema
 from app.db.session import create_session_factory, get_db
 
 
@@ -98,6 +99,9 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     @app.on_event("startup")
     def on_startup() -> None:
         Base.metadata.create_all(bind=engine)
+        # ``create_all`` never alters existing tables; reconcile the additive
+        # Tier 1 anti-fraud changes (new column + widened unique constraint).
+        reconcile_schema(engine)
         if settings.SEED_DEFAULT_ADMIN:
             from app.core.security import hash_password
             from app.models import Admin
