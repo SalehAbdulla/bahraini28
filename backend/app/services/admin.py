@@ -18,6 +18,7 @@ from app.models import (
     Transaction,
     User,
 )
+from app.models.transaction import STATUS_APPROVED, STATUS_PENDING
 from app.services.transactions import (
     start_of_calendar_day,
 )
@@ -282,7 +283,20 @@ def dashboard_metrics(db: Session) -> dict:
         or 0
     )
     total_rewards = int(
-        db.scalar(select(func.coalesce(func.sum(Transaction.reward_increment), 0))) or 0
+        db.scalar(
+            select(func.coalesce(func.sum(Transaction.reward_increment), 0)).where(
+                Transaction.status == STATUS_APPROVED
+            )
+        )
+        or 0
+    )
+    pending_reviews = int(
+        db.scalar(
+            select(func.count(Transaction.id)).where(
+                Transaction.status == STATUS_PENDING
+            )
+        )
+        or 0
     )
 
     recent = list(
@@ -301,6 +315,7 @@ def dashboard_metrics(db: Session) -> dict:
         "total_transactions": total_transactions,
         "transactions_today": transactions_today,
         "total_rewards_awarded": total_rewards,
+        "pending_reviews": pending_reviews,
         "recent_transactions": [
             {
                 "id": t.id,
@@ -310,6 +325,7 @@ def dashboard_metrics(db: Session) -> dict:
                 "business_name": t.business.name if t.business else None,
                 "invoice_number": t.invoice_number,
                 "reward_increment": t.reward_increment,
+                "status": t.status,
                 "created_at": t.created_at,
             }
             for t in recent
