@@ -34,7 +34,7 @@ def test_submit_inactive_business_blocked(client, db):
     token = active_user_token(client, db)
     bz = make_business(db, is_active=False)
 
-    res = submit(client, token, bz.id, "INV-1")
+    res = submit(client, token, bz.id, "INV-0001")
     assert res.status_code == 403
     assert res.json()["code"] == "business_inactive"
 
@@ -43,23 +43,24 @@ def test_submit_expired_business_blocked(client, db):
     token = active_user_token(client, db)
     bz = make_business(db, expiry_days=-5)
 
-    res = submit(client, token, bz.id, "INV-1")
+    res = submit(client, token, bz.id, "INV-0001")
     assert res.status_code == 403
     assert res.json()["code"] == "business_expired"
 
 
 def test_submit_unknown_business_not_found(client, db):
     token = active_user_token(client, db)
-    res = submit(client, token, 999_999, "INV-1")
+    res = submit(client, token, 999_999, "INV-0001")
     assert res.status_code == 404
 
 
-def test_invoice_number_trimmed(client, db):
+def test_invoice_number_trimmed_and_normalized(client, db):
     token = active_user_token(client, db)
     bz = make_business(db)
 
-    res = submit(client, token, bz.id, "  INV-ABC  ")
+    res = submit(client, token, bz.id, "  inv-abc  ")
     assert res.status_code == 201
+    # Stored in canonical form (trimmed + upper-cased).
     assert res.json()["invoice_number"] == "INV-ABC"
 
 
