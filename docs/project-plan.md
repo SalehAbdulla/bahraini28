@@ -112,6 +112,95 @@ hard-coded, and administrators manage them from the control center:
 
 ---
 
+## Brand Identity & Assets
+
+The look follows the organization's official deck (`docs/Bahraini 28 3.pdf`
+plus `docs/Fonts.zip`). Those originals are ~37 MB and **git-ignored**, so
+everything the app actually serves is derived once from the deck and committed
+under `frontend/public/` — no build step depends on the originals.
+
+- **Palette** sampled straight from the deck: brand green **`#6db193`**
+  (identical on pages 3-5 and 8-9), paper cream `#fff8e4`, ink `#1a1a1a`,
+  brush grey `#878787`. Wired into `frontend/tailwind.config.js`, which also
+  defines `brand-700` (`#447f66`) because `#6db193` on white is only ~2.3:1 —
+  solid buttons and links use `brand-700` to stay WCAG AA.
+- **Script face**: `HOOKER.otf` from `Fonts.zip` is self-hosted at
+  `frontend/public/brand/fonts/HOOKER.otf` as `font-script`, used only as a
+  display accent ("Hello Bahrainies!", "Soon!", step numerals, the footer
+  wordmark). Body copy stays on the system sans stack — no webfont download.
+- **Textures**: `texture-cream.jpg` (page 4 band), `texture-mint.jpg` (page 7),
+  `texture-ink.jpg` (page 5) — logo-free watercolour bands used as section
+  washes via the `bg-texture-*` utilities.
+- **Logo & badge**: `brand/logo-sm.png` (431×240) is the one the UI actually
+  loads — it is the header mark and both landing-page marks; `brand/logo.png`
+  (862×480) is kept as the high-resolution master (the deck it is cut from is
+  git-ignored, so the repo must hold the best copy). `brand/badge.png` (768 px,
+  hero) and `brand/badge-sm.png` (160 px, 44 px footer slot) are the same cream
+  disc sized per use, so no page ships the hero file for a thumbnail.
+- **Icons & previews**: `favicon.png`, `favicon.ico`, `apple-touch-icon.png`
+  and `og-image.jpg` (1200×630), all referenced from `frontend/index.html`,
+  which also preloads the script face and sets `theme-color`.
+
+### Regeneration recipe
+
+Needs `ghostscript` (page raster) and ImageMagick v7 (`magick`). With
+`W=/tmp/br` and `OUT=frontend/public/brand`:
+
+```bash
+# --- logo plate (page 3) and the watercolour bands (pages 4, 5, 7) ---
+for p in 3 4 5 6 7 8 9; do
+  gs -q -dNOSAFER -dNOPAUSE -dBATCH -sDEVICE=pngalpha -r150 \
+     -dFirstPage=$p -dLastPage=$p -sOutputFile=$W/p$p.png "docs/Bahraini 28 3.pdf"
+done
+
+# --- logo (trim the transparent plate) ---
+magick $W/p3.png -trim +repage $W/logo_trim.png
+magick $W/logo_trim.png -resize x480 -define png:compression-level=9 -strip $OUT/logo.png
+magick $W/logo_trim.png -resize x240 -define png:compression-level=9 -strip $OUT/logo-sm.png
+
+# --- badge: cream disc + grey ring + centred logo, then per-use sizes ---
+magick -size 1200x1200 xc:none -fill '#fff6dc' -stroke '#a7a6a6' -strokewidth 18 \
+       -draw 'circle 600,600 600,14' $W/badge_base.png
+magick $W/badge_base.png \( $W/logo_trim.png -resize x430 \) \
+       -gravity center -composite -depth 8 -strip $W/badge_master.png
+magick $W/badge_master.png -resize 768x768 -strip $OUT/badge.png
+magick $W/badge_master.png -resize 160x160 -colors 96 -strip $OUT/badge-sm.png
+
+# --- textures: logo-free bands of the watercolour pages ---
+# -alpha remove is REQUIRED: these renders are RGBA and page 7's transparent
+# right margin composites to a solid black bar in JPEG if it is not flattened.
+magick $W/p4.png -crop 2344x1523+0+3146 +repage -background '#fff8e4' -alpha remove -alpha off \
+       -resize 1600x -quality 82 -strip $OUT/texture-cream.jpg
+magick $W/p7.png -crop 2330x1370+0+2943 +repage -background '#fff8e4' -alpha remove -alpha off \
+       -resize 1600x -quality 82 -strip $OUT/texture-mint.jpg
+magick $W/p5.png -crop 2344x1522+0+101  +repage -background '#fff8e4' -alpha remove -alpha off \
+       -resize 1600x -quality 82 -strip $OUT/texture-ink.jpg
+
+# --- icons + social card ---
+magick $OUT/badge.png -resize 64x64   -strip frontend/public/favicon.png
+magick $OUT/badge.png -resize 180x180 -strip frontend/public/apple-touch-icon.png
+magick $OUT/badge.png -define icon:auto-resize=16,32,48 -strip frontend/public/favicon.ico
+magick $OUT/texture-cream.jpg -resize 1200x -gravity center -crop 1200x630+0+0 +repage \
+       \( $W/logo_trim.png -resize x300 \) -gravity center -composite \
+       -quality 88 -strip frontend/public/og-image.jpg
+
+# --- script face (unzip Fonts.zip first) ---
+cp HOOKER.otf $OUT/fonts/HOOKER.otf
+```
+
+Two traps worth remembering when adjusting this: always keep the `-alpha remove`
+step on the textures, and never write a 16-bit render straight to PNG for the
+web — quantising *without* forcing `-depth 8` leaves a low-colour file that
+still costs six bytes a pixel. Sanity checks after a rebuild:
+
+```bash
+# no near-black pixels in the mint wash (a low value means the flatten was skipped)
+magick $OUT/texture-mint.jpg -format '%[fx:minima*255]\n' info:   # expect >180
+magick $OUT/badge.png   -format '%[channels]\n' info:              # expect "srgba 4.0"
+```
+
+---
+
 ## Production Deployment
 
 Target: **Oracle Cloud Always Free** (Ampere A1 ARM, Ubuntu 24.04, ≥2 GB RAM)
