@@ -41,6 +41,17 @@ class Settings(BaseSettings):
     DEFAULT_TIMEZONE: str = "Asia/Bahrain"
     # Maximum number of successful uses per business per calendar day.
     DAILY_LIMIT_PER_BUSINESS: int = 3
+    # Maximum *total* successful submissions across all businesses per calendar
+    # day. A per-business cap alone is weak: with dozens of partners a single
+    # account could otherwise farm 3 x N fabricated invoices every day.
+    DAILY_LIMIT_TOTAL: int = 8
+    # Fallback invoice-number pattern (regex, full match) used when a partner
+    # has no ``invoice_pattern`` of its own. 3-64 chars of letters/digits,
+    # optionally separated by ``- / _ .`` — rejects junk such as "!!!" or "  ".
+    INVOICE_DEFAULT_PATTERN: str = r"[A-Za-z0-9][A-Za-z0-9\-/_.]{2,63}"
+    # Publish an admin fraud signal once a volunteer credits this many
+    # *distinct* businesses in a single day.
+    FRAUD_DISTINCT_BUSINESSES_PER_DAY: int = 5
 
     # --- Assets -------------------------------------------------------------
     # Directors for uploaded business logos (served at /uploads).
