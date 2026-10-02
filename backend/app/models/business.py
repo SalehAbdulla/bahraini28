@@ -25,6 +25,9 @@ class Business(Base):
     logo_path: Mapped[str | None] = mapped_column(String(255), nullable=True)
     discount_percentage: Mapped[int] = mapped_column(Integer, nullable=False)
     description: Mapped[str | None] = mapped_column(Text, nullable=True)
+    # Optional per-partner validation regex (full match) applied to submitted
+    # invoice numbers. Falls back to INVOICE_DEFAULT_PATTERN when NULL.
+    invoice_pattern: Mapped[str | None] = mapped_column(String(160), nullable=True)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
     # Partnership validity — bookings stop after this date.
     expiry_date: Mapped[datetime] = mapped_column(TZDateTime(), nullable=False)
