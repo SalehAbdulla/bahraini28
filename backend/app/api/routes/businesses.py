@@ -134,6 +134,9 @@ def business_transactions(
                 invoice_number=t.invoice_number,
                 reward_increment=t.reward_increment,
                 created_at=t.created_at,
+                # Public history: status only — never the rejection note or the
+                # receipt image, which belong to the volunteer and the admins.
+                status=t.status,
             )
             for t in items
         ],
