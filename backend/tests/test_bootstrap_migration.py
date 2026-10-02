@@ -1,4 +1,4 @@
-"""Schema reconciliation tests (Tier 1 migration).
+"""Schema reconciliation tests (Tier 1 + Tier 2 migrations).
 
 `Base.metadata.create_all` never alters an existing table, so a database created
 before the anti-fraud work must be migrated by ``reconcile_schema`` on startup.
@@ -7,6 +7,8 @@ asserts the migration:
 
 * adds ``businesses.invoice_pattern``;
 * tightens invoice uniqueness to ``(business_id, invoice_number)``;
+* adds the Tier 2 review columns and backfills existing rows to ``approved`` so
+  no historical reward is lost;
 * is idempotent (safe to run on every boot).
 
 Kept as a real test rather than a scratch script so the guarantee survives.
@@ -123,3 +125,75 @@ def test_reconcile_is_idempotent(legacy_engine):
     reconcile_schema(legacy_engine)  # must not raise
 
     assert "uq_business_invoice" in _names(legacy_engine, "transactions")
+
+
+# --- Tier 2: receipt review lifecycle ------------------------------------------
+
+REVIEW_COLUMNS = {
+    "status",
+    "receipt_path",
+    "receipt_sha256",
+    "reviewed_by",
+    "reviewed_at",
+    "rejection_reason",
+}
+
+
+def test_reconcile_adds_review_columns_and_backfills_legacy_rows(legacy_engine):
+    """Pre-Tier-2 rows were credited instantly — they must stay ``approved``."""
+    with legacy_engine.begin() as conn:
+        conn.execute(
+            text(
+                "INSERT INTO transactions "
+                "(user_id, business_id, invoice_number, reward_increment, created_at) "
+                "VALUES (1, 10, 'OLD-1', 1, '2024-01-02 03:04:05')"
+            )
+        )
+
+    before = {c["name"] for c in inspect(legacy_engine).get_columns("transactions")}
+    assert REVIEW_COLUMNS.isdisjoint(before)
+
+    reconcile_schema(legacy_engine)
+
+    columns = {c["name"] for c in inspect(legacy_engine).get_columns("transactions")}
+    assert REVIEW_COLUMNS <= columns
+
+    with legacy_engine.begin() as conn:
+        row = conn.execute(
+            text(
+                "SELECT status, reviewed_at, created_at FROM transactions "
+                "WHERE invoice_number = 'OLD-1'"
+            )
+        ).one()
+    assert row[0] == "approved"
+    # reviewed_at is stamped from created_at so the ledger order is preserved.
+    assert row[1] == row[2]
+
+
+def test_reconcile_review_columns_is_idempotent(legacy_engine):
+    reconcile_schema(legacy_engine)
+    with legacy_engine.begin() as conn:
+        conn.execute(
+            text(
+                "INSERT INTO transactions "
+                "(user_id, business_id, invoice_number, reward_increment) "
+                "VALUES (2, 11, 'NEW-1', 1)"
+            )
+        )
+
+    reconcile_schema(legacy_engine)  # second boot must not raise
+
+    columns = {c["name"] for c in inspect(legacy_engine).get_columns("transactions")}
+    assert REVIEW_COLUMNS <= columns
+    # The explicit status set by the application is never overwritten by a
+    # later boot (the backfill only runs on the boot that adds the column).
+    with legacy_engine.begin() as conn:
+        conn.execute(
+            text("UPDATE transactions SET status = 'rejected' WHERE invoice_number = 'NEW-1'")
+        )
+    reconcile_schema(legacy_engine)
+    with legacy_engine.begin() as conn:
+        status = conn.execute(
+            text("SELECT status FROM transactions WHERE invoice_number = 'NEW-1'")
+        ).scalar()
+    assert status == "rejected"
