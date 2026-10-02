@@ -227,12 +227,12 @@ export default function AdminUsers() {
                   <td className="px-4 py-2">
                     {u.is_active ? (
                       new Date(u.expiry_date) > new Date() ? (
-                        <span className="inline-block text-xs font-semibold rounded-full px-2.5 py-1 bg-brand-100 text-brand-700">Active</span>
+                        <span className="inline-block text-xs font-semibold px-2.5 py-1 bg-brand-100 text-brand-700">Active</span>
                       ) : (
-                        <span className="inline-block text-xs font-semibold rounded-full px-2.5 py-1 bg-amber-100 text-amber-700">Expired</span>
+                        <span className="inline-block text-xs font-semibold px-2.5 py-1 bg-amber-100 text-amber-700">Expired</span>
                       )
                     ) : (
-                      <span className="inline-block text-xs font-semibold rounded-full px-2.5 py-1 bg-slate-200 text-slate-600">Inactive</span>
+                      <span className="inline-block text-xs font-semibold px-2.5 py-1 bg-slate-200 text-slate-600">Inactive</span>
                     )}
                   </td>
                   <td className="px-4 py-2 text-right whitespace-nowrap">
