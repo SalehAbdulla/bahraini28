@@ -17,6 +17,9 @@ class UserProfile(ORMModel):
     expiry_date: datetime
     is_active: bool
     reward_points: int
+    #: Rewards sitting in the review queue (Tier 2). ``reward_points`` is the
+    #: *approved*, spendable balance; this is not spendable yet.
+    pending_reward_points: int = 0
     must_change_password: bool
     created_at: datetime
 
