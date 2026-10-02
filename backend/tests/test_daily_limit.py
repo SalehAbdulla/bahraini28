@@ -75,8 +75,8 @@ def test_duplicate_invoice_rejected(client, db):
     _, token = setup_activated_user(client, db)
     bz = make_business(db)
 
-    assert submit(client, token, bz.id, "SAME").status_code == 201
-    res = submit(client, token, bz.id, "SAME")
+    assert submit(client, token, bz.id, "SAME-1").status_code == 201
+    res = submit(client, token, bz.id, "SAME-1")
     assert res.status_code == 409
     assert res.json()["code"] == "duplicate_invoice"
 
