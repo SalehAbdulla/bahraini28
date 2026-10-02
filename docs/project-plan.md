@@ -66,6 +66,25 @@ Seamlessly bridges physical retail interactions with digital accountability, ens
 - [x] Write integration tests for authentication flows, expiry checks, single-session token invalidation, and invoice reward increments (44 backend tests, SQLite + PostgreSQL via `TEST_DATABASE_URL`).
 - [x] Playwright E2E suite under `e2e/`: volunteer journey (login → first-login modal → directory → invoice → profile reward) and admin dashboard SSE live feed.
 
+### Phase 6: Anti-fraud hardening — ✅ done
+- [x] **Tier 1** (see `docs/ANTI_FRAUD_PLAN.md`): per-partner `invoice_pattern`
+      regex + global fallback, global duplicate guard
+      `UNIQUE(business_id, invoice_number)`, per-business and total daily caps,
+      `fraud_signal` SSE alert. Reconciles existing databases in
+      `app/db/bootstrap.py`.
+- [x] **Tier 2** (receipt proof + admin approval): multipart submission with a
+      receipt (`business_id`, `invoice_number`, `receipt`), per-partner receipt
+      SHA-256 de-duplication, `pending → approved | rejected` lifecycle
+      (`transactions.status` / `receipt_path` / `receipt_sha256` /
+      `reviewed_by` / `reviewed_at` / `rejection_reason`), the admin review API
+      (`GET /api/v1/admin/transactions/review`,
+      `POST .../{id}/approve`, `POST .../{id}/reject`) and queue UI
+      (`/admin/reviews`), `RewardAdjustment` audit row on every approval, the
+      `invoice_reviewed` SSE event, the `/admin/reviews` layout guard in
+      `e2e/test_layout.py`, and the `REQUIRE_RECEIPT_REVIEW` rollout switch.
+      `app/db/bootstrap.py::_ensure_review_columns` migrates existing databases
+      and backfills legacy rows to `approved` (no rewards lost).
+
 ---
 
 ## Domain
