@@ -34,10 +34,14 @@ TEST_FRAUD_THRESHOLD = 1000
 TEST_UPLOAD_DIR = tempfile.mkdtemp(prefix="bahraini28-test-uploads-")
 
 
-def make_test_settings() -> Settings:
+def make_test_settings(*, require_receipt_review: bool = False) -> Settings:
     # The suite runs against an in-memory SQLite database by default. Set the
     # TEST_DATABASE_URL environment variable to re-run the exact same suite
     # against a real PostgreSQL instance (used by CI / repeatable checks).
+    #
+    # ``require_receipt_review`` defaults to False so the historical Tier 1
+    # tests (which submit a JSON invoice and assert an instant balance) keep
+    # passing; the Tier 2 tests opt in explicitly.
     database_url = os.environ.get("TEST_DATABASE_URL") or "sqlite:///:memory:"
     return Settings(
         DATABASE_URL=database_url,
@@ -48,6 +52,7 @@ def make_test_settings() -> Settings:
         DAILY_LIMIT_PER_BUSINESS=TEST_LIMIT,
         DAILY_LIMIT_TOTAL=TEST_TOTAL_LIMIT,
         FRAUD_DISTINCT_BUSINESSES_PER_DAY=TEST_FRAUD_THRESHOLD,
+        REQUIRE_RECEIPT_REVIEW=require_receipt_review,
         SEED_DEFAULT_ADMIN=True,
         ADMIN_INITIAL_USERNAME="admin",
         ADMIN_INITIAL_PASSWORD="admin123",
@@ -79,6 +84,34 @@ def db(app):
     engine = app.state.engine
     session_factory = app.state.SessionLocal
     session = session_factory()
+    yield session
+    session.close()
+    Base.metadata.drop_all(bind=engine)
+
+
+# --- Tier 2 fixtures (REQUIRE_RECEIPT_REVIEW=True) ---------------------------
+# A separate app/engine so the receipt-review suite exercises the real default
+# without changing the Tier-1 behaviour every other test module relies on.
+
+
+@pytest.fixture
+def review_app():
+    settings = make_test_settings(require_receipt_review=True)
+    application = create_app(settings)
+    yield application
+    application.state.engine.dispose()
+
+
+@pytest.fixture
+def review_client(review_app) -> Generator[TestClient, None, None]:
+    with TestClient(review_app) as c:
+        yield c
+
+
+@pytest.fixture
+def review_db(review_app):
+    engine = review_app.state.engine
+    session = review_app.state.SessionLocal()
     yield session
     session.close()
     Base.metadata.drop_all(bind=engine)
