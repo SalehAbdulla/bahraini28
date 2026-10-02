@@ -2,6 +2,11 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Single source of truth for corner radius — sharp everywhere (0). */
+:root {
+  --radius: 0;
+}
+
 /* ---------------------------------------------------------------------------
  * Brand typography
  * ---------------------------------------------------------------------------
@@ -31,14 +36,14 @@
 
 @layer components {
   .input-field {
-    @apply w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500;
+    @apply w-full rounded-lg border border-ink-900/15 bg-white px-3 py-2 text-sm text-ink-900 placeholder:text-ink-800/50 focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500;
   }
   /* brand-700 keeps white button text at 4.7:1 (WCAG AA). */
   .btn-primary {
     @apply inline-flex items-center justify-center px-4 py-2 rounded-lg bg-brand-700 text-white text-sm font-semibold hover:bg-brand-800 disabled:opacity-50 disabled:cursor-not-allowed transition;
   }
   .btn-secondary {
-    @apply inline-flex items-center justify-center px-4 py-2 rounded-lg border border-slate-300 bg-white text-slate-700 text-sm font-semibold hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition;
+    @apply inline-flex items-center justify-center rounded-lg border border-ink-900/15 bg-white px-4 py-2 text-sm font-semibold text-ink-900 hover:bg-ink-900/5 disabled:cursor-not-allowed disabled:opacity-50 transition;
   }
   /* For use on the dark brand canvas (ink-900). */
   .btn-cream {
@@ -52,7 +57,7 @@
   }
   /* Small uppercase label used above headlines. */
   .eyebrow {
-    @apply inline-block rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-widest;
+    @apply inline-block rounded-none px-3 py-1 text-xs font-semibold uppercase tracking-widest;
   }
 }
 
@@ -82,7 +87,7 @@
 :focus-visible {
   outline: 2px solid #447f66;
   outline-offset: 2px;
-  border-radius: 2px;
+  border-radius: 0;
 }
 
 /* Subtle custom scrollbar to match the minimal theme. */
@@ -95,7 +100,7 @@
 }
 ::-webkit-scrollbar-thumb {
   background-color: #d7cbb2;
-  border-radius: 3px;
+  border-radius: 0;
 }
 ::-webkit-scrollbar-thumb:hover {
   background-color: #c2b28f;
