@@ -53,6 +53,15 @@ class Settings(BaseSettings):
     # *distinct* businesses in a single day.
     FRAUD_DISTINCT_BUSINESSES_PER_DAY: int = 5
 
+    # --- Tier 2: receipt proof + admin approval ----------------------------
+    # When True (the default) a submission is stored as ``pending`` and the
+    # reward is credited only once an admin approves it — the volunteer must
+    # attach a photo/PDF of the physical receipt. When False the deployment
+    # falls back to the Tier 1 behaviour: the receipt is optional and the
+    # reward is credited immediately, so a pre-onboarding deployment (or an
+    # old frontend build) keeps working.
+    REQUIRE_RECEIPT_REVIEW: bool = True
+
     # --- Assets -------------------------------------------------------------
     # Directors for uploaded business logos (served at /uploads).
     UPLOAD_DIR: str = "backend/uploads"
