@@ -11,27 +11,22 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   };
 
   const navLink = ({ isActive }: { isActive: boolean }) =>
-    `px-3 py-1.5 rounded-md text-sm font-medium whitespace-nowrap transition ${
+    `px-3 py-1.5 text-sm whitespace-nowrap transition ${
       isActive
-        ? "bg-brand-100 text-brand-800"
-        : "text-ink-800/70 hover:bg-brand-50 hover:text-brand-800"
+        ? "font-semibold text-ink-900 underline decoration-brand-500 underline-offset-8"
+        : "font-medium text-ink-800/70 hover:text-ink-900 hover:underline hover:underline-offset-8"
     }`;
 
   return (
     <div className="min-h-screen flex flex-col">
       <header className="sticky top-0 z-40 border-b border-brush/25 bg-cream-50/90 backdrop-blur">
-        <nav className="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between">
+        <nav className="container-page h-16 flex items-center justify-between">
           <Link to="/" className="flex items-center gap-2.5">
             {/* Official Bahraini 28 mark (green brush lettering + "28").
                 The 240px `logo-sm` variant covers every on-screen slot — 36px
                 here, 44px and 56px on the landing page — at up to 4× DPR, so
                 the 480px master is kept in the repo but never shipped. */}
             <img src="/brand/logo-sm.png" alt="Bahraini 28" className="h-9 w-auto" />
-            {/* The mark already contains the wordmark — hide the redundant
-                English lock-up on narrow screens so the nav never wraps. */}
-            <span className="hidden whitespace-nowrap text-lg font-semibold tracking-tight text-ink-900 sm:inline">
-              Bahraini <span className="text-brand-600">28</span>
-            </span>
           </Link>
           <div className="flex items-center gap-2 sm:gap-3">
             <NavLink to="/directory" className={navLink}>
@@ -60,10 +55,10 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         </nav>
       </header>
 
-      <main className="max-w-6xl mx-auto px-4 py-8 flex-1 w-full">{children}</main>
+      <main className="container-page py-8 flex-1 w-full">{children}</main>
 
       <footer className="mt-6 border-t border-brush/25 bg-cream-100/70">
-        <div className="max-w-6xl mx-auto px-4 py-8 flex flex-wrap items-center justify-between gap-5">
+        <div className="container-page py-8 flex flex-wrap items-center justify-between gap-5">
           <div className="flex items-center gap-3">
             {/* 44 px slot -> the 160 px variant. Reusing the 768 px hero badge
                 would add ~115 KB to every page for no visible gain. */}
