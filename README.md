@@ -22,11 +22,17 @@ Monorepo with two independent components:
 - **Single-session enforcement**: each new user login rolls `token_version`,
   invalidating all older tokens. Admins are exempt (multi-tab friendly).
 - **Daily usage limit**: at most **3 uses per business per calendar day**
-  (independent per business); the counter derives from transactions created
-  after the start of the day in `Asia/Bahrain`, so it **auto-resets at
-  midnight** with no background job.
-- **Duplicate-invoice guard**: the same invoice number can't be submitted
-  twice for the same business.
+  (independent per business) **and 8 across all partners** (`DAILY_LIMIT_TOTAL`);
+  the counters derive from transactions created after the start of the day in
+  `Asia/Bahrain`, so they **auto-reset at midnight** with no background job.
+- **Invoice-number validation (anti-fraud, Tier 1)**: a submitted invoice must
+  match the partner's `invoice_pattern` regex (or a global fallback), and each
+  invoice number can be credited **only once per business — by anyone**, so a
+  receipt cannot be shared between accounts and junk such as `"!!!"` is
+  rejected. Accounts crediting an unusually high number of *distinct* partners
+  in one day raise a `fraud_signal` on the admin dashboard.
+  See `docs/ANTI_FRAUD_PLAN.md`; real verification (receipt proof + admin
+  approval) is the planned **Tier 2** milestone.
 - **First-login profile activation**: new accounts force a name/email/password
   update before first use.
 - **Audit trail**: every manual reward adjustment is logged to
