@@ -94,13 +94,22 @@ export async function api<T>(path: string, opts: ApiOptions = {}): Promise<T> {
 }
 
 /**
- * Multipart upload helper (used for business logos). The browser sets the
- * multipart boundary, so no Content-Type header is manually attached.
+ * Multipart upload helper (business logos, invoice receipts). The browser sets
+ * the multipart boundary, so no Content-Type header is manually attached.
+ *
+ * `fields` carries extra form values (e.g. business_id/invoice_number) and
+ * `fileField` names the file part (the API expects `file` for a logo and
+ * `receipt` for an invoice receipt).
  */
 export async function apiUpload<T>(
   path: string,
   file: File,
-  opts: { admin?: boolean; auth?: boolean } = {}
+  opts: {
+    admin?: boolean;
+    auth?: boolean;
+    fields?: Record<string, string>;
+    fileField?: string;
+  } = {}
 ): Promise<T> {
   const headers: Record<string, string> = {};
   const token = opts.admin ? getAdminToken() : getUserToken();
@@ -108,7 +117,10 @@ export async function apiUpload<T>(
     headers["Authorization"] = `Bearer ${token}`;
   }
   const form = new FormData();
-  form.append("file", file);
+  for (const [key, value] of Object.entries(opts.fields ?? {})) {
+    form.append(key, value);
+  }
+  form.append(opts.fileField ?? "file", file);
 
   const res = await fetch(`${API_URL}${path}`, {
     method: "POST",
