@@ -29,6 +29,8 @@ async def submit_invoice(payload: InvoiceSubmitRequest, user: CurrentUser, db: D
 
     used_today = tx_service.count_uses_today(db, user.id, transaction.business_id)
     remaining = max(0, settings.DAILY_LIMIT_PER_BUSINESS - used_today)
+    used_today_total = tx_service.count_uses_today_total(db, user.id)
+    remaining_total = max(0, settings.DAILY_LIMIT_TOTAL - used_today_total)
 
     # Push a real-time purchase alert to connected admin dashboards.
     await bus.publish(
@@ -45,6 +47,22 @@ async def submit_invoice(payload: InvoiceSubmitRequest, user: CurrentUser, db: D
         },
     )
 
+    # Anti-fraud signal: one account crediting an unusually high number of
+    # *distinct* partners in a single day. Surfaced on the admin dashboard so a
+    # human can review the ledger before more rewards are handed out.
+    distinct_today = tx_service.count_distinct_businesses_today(db, user.id)
+    if distinct_today >= settings.FRAUD_DISTINCT_BUSINESSES_PER_DAY:
+        await bus.publish(
+            "fraud_signal",
+            {
+                "user_id": user.id,
+                "user_name": user.name,
+                "distinct_businesses_today": distinct_today,
+                "threshold": settings.FRAUD_DISTINCT_BUSINESSES_PER_DAY,
+                "created_at": transaction.created_at,
+            },
+        )
+
     return TransactionCreatedOut(
         id=transaction.id,
         business_id=transaction.business_id,
@@ -54,5 +72,7 @@ async def submit_invoice(payload: InvoiceSubmitRequest, user: CurrentUser, db: D
         created_at=transaction.created_at,
         used_today=used_today,
         remaining_today=remaining,
+        used_today_total=used_today_total,
+        remaining_today_total=remaining_total,
         reward_points_balance=user.reward_points,
     )
