@@ -53,20 +53,25 @@ export default function Profile() {
     }
   };
 
-  if (!me) return <p className="text-slate-400 py-16 text-center">Loading…</p>;
+  if (!me) return <p className="text-ink-800/50 py-16 text-center">Loading…</p>;
 
   const cards = [
     { label: "Reward points", value: me.reward_points, cls: "text-brand-600" },
     { label: "Membership", value: me.is_active ? "Active" : "Inactive", cls: "text-brand-600" },
-    { label: "Expires", value: fmtDateOnly(me.expiry_date), cls: "text-slate-600" },
+    { label: "Expires", value: fmtDateOnly(me.expiry_date), cls: "text-ink-800/70" },
   ];
 
   return (
     <div className="max-w-4xl mx-auto">
       <div className="flex flex-col sm:flex-row sm:items-center gap-4">
         <div>
-          <h1 className="text-3xl font-extrabold text-slate-900">{me.name}</h1>
-          <p className="mt-1 text-sm text-slate-500">
+          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-brand-600/80">
+            Member profile
+          </p>
+          <h1 className="mt-2 font-serif text-3xl font-normal tracking-[-0.015em] text-ink-900">
+            {me.name}
+          </h1>
+          <p className="mt-1 text-sm text-ink-800/60">
             CPR {me.cpr} · {me.is_active ? "Active member" : "Inactive account"}
           </p>
         </div>
@@ -77,8 +82,8 @@ export default function Profile() {
 
       <div className="mt-8 grid sm:grid-cols-3 gap-4">
         {cards.map((c) => (
-          <div key={c.label} className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm">
-            <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+          <div key={c.label} className="bg-white border border-ink-900/10 rounded-2xl p-5">
+            <div className="text-xs font-semibold uppercase tracking-wide text-ink-800/60">
               {c.label}
             </div>
             <div className={`mt-1 text-2xl font-extrabold ${c.cls}`}>{c.value}</div>
@@ -87,8 +92,10 @@ export default function Profile() {
       </div>
 
       <div className="mt-8 grid md:grid-cols-2 gap-6">
-        <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm">
-          <h2 className="font-semibold text-slate-900 mb-4">Membership details</h2>
+        <div className="bg-white border border-ink-900/10 rounded-2xl p-6">
+          <h2 className="mb-4 font-serif text-xl font-normal text-ink-900">
+            Membership details
+          </h2>
           <dl className="space-y-3 text-sm">
             {[
               ["Name", me.name],
@@ -98,27 +105,29 @@ export default function Profile() {
               ["Reward points", me.reward_points],
               ["Membership expiry", fmtDate(me.expiry_date)],
             ].map(([k, v]) => (
-              <div key={k} className="flex justify-between gap-4 border-b border-slate-100 pb-2">
-                <dt className="text-slate-500">{k}</dt>
-                <dd className="font-medium text-slate-900">{v}</dd>
+              <div key={k} className="flex justify-between gap-4 border-b border-ink-900/10 pb-2">
+                <dt className="text-ink-800/60">{k}</dt>
+                <dd className="font-medium text-ink-900">{v}</dd>
               </div>
             ))}
           </dl>
         </div>
 
-        <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm">
-          <h2 className="font-semibold text-slate-900 mb-4">Edit profile</h2>
+        <div className="bg-white border border-ink-900/10 rounded-2xl p-6">
+          <h2 className="mb-4 font-serif text-xl font-normal text-ink-900">
+            Edit profile
+          </h2>
           <form onSubmit={saveProfile} className="space-y-4" noValidate>
             <div>
-              <label className="block text-sm font-medium text-slate-700">Full name</label>
+              <label className="block text-sm font-medium text-ink-800">Full name</label>
               <input className="input-field" required minLength={2} maxLength={120} value={name} onChange={(e) => setName(e.target.value)} />
             </div>
             <div>
-              <label className="block text-sm font-medium text-slate-700">Email</label>
+              <label className="block text-sm font-medium text-ink-800">Email</label>
               <input type="email" className="input-field" required value={email} onChange={(e) => setEmail(e.target.value)} />
             </div>
             <div>
-              <label className="block text-sm font-medium text-slate-700">Phone</label>
+              <label className="block text-sm font-medium text-ink-800">Phone</label>
               <input type="tel" className="input-field" value={phone} onChange={(e) => setPhone(e.target.value)} />
             </div>
             {saved && (
@@ -136,16 +145,18 @@ export default function Profile() {
         </div>
       </div>
 
-      <h2 className="mt-12 text-xl font-bold text-slate-900">My usage history</h2>
-      <div className="mt-4 bg-white border border-slate-200 rounded-2xl overflow-hidden">
+      <h2 className="mt-12 font-serif text-xl font-normal text-ink-900">
+        My usage history
+      </h2>
+      <div className="mt-4 bg-white border border-ink-900/10 rounded-2xl overflow-hidden">
         {history.length === 0 ? (
-          <p className="p-4 text-sm text-slate-400">
+          <p className="p-4 text-sm text-ink-800/50">
             No transactions yet — visit the directory and submit your first invoice!
           </p>
         ) : (
           <table className="w-full text-sm">
             <thead>
-              <tr className="bg-slate-50 text-left text-slate-500">
+              <tr className="bg-ink-900/5 text-left text-ink-800/60">
                 <th className="px-4 py-2">Business</th>
                 <th className="px-4 py-2">Invoice</th>
                 <th className="px-4 py-2">Reward</th>
@@ -154,7 +165,7 @@ export default function Profile() {
             </thead>
             <tbody>
               {history.map((t) => (
-                <tr key={t.id} className="border-t border-slate-100">
+                <tr key={t.id} className="border-t border-ink-900/10">
                   <td className="px-4 py-2">{t.business_name}</td>
                   <td className="px-4 py-2">{t.invoice_number}</td>
                   <td className="px-4 py-2">+{t.reward_increment}</td>
