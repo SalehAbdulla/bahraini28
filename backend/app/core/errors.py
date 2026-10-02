@@ -191,3 +191,23 @@ class InvoiceFormatError(AppError):
     status_code = 400
     code = "invalid_invoice_format"
     message = "The invoice number does not match the expected format for this partner."
+
+
+class ReceiptRequiredError(AppError):
+    status_code = 400
+    code = "receipt_required"
+    message = "Attach a photo or PDF of your receipt to submit this invoice."
+
+
+class TransactionNotPendingError(AppError):
+    """Raised when a review decision targets a row that is not awaiting review."""
+
+    status_code = 409
+    code = "transaction_not_pending"
+    message = "This submission has already been reviewed."
+
+
+class TransactionNotFoundError(AppError):
+    status_code = 404
+    code = "transaction_not_found"
+    message = "Transaction not found."
