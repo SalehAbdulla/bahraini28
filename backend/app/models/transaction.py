@@ -1,19 +1,36 @@
-"""Transaction model — a verified invoice submission that increments rewards.
+"""Transaction model — an invoice submission that earns a reward after review.
 
-The daily usage limit (3 uses per business per calendar day) is *derived* from
-this table by counting rows for a given (user, business) created after the
-start of the current calendar day. This makes the limit automatically "reset"
-at midnight with no background job required.
+Two rules live here:
+
+* **Tier 1 (anti-fraud):** an invoice number can only ever be credited once per
+  business — *by anyone* — so a receipt cannot be shared across accounts.
+* **Tier 2 (proof):** a submission carries the receipt evidence and moves
+  ``pending → approved | rejected``. ``reward_points`` is only credited on
+  approval, so ``status`` is what decides whether a row is spendable.
+
+The daily usage limit is *derived* from this table by counting rows for a given
+(user, business) created after the start of the current calendar day, so the
+limit "resets" at midnight with no background job required.
 """
 from __future__ import annotations
 
 from datetime import datetime, timezone
 
-from sqlalchemy import ForeignKey, Integer, String, UniqueConstraint
+from sqlalchemy import ForeignKey, Integer, String, Text, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import Base
 from app.db.types import TZDateTime
+
+# Review lifecycle values. Plain strings (matching the rest of the project,
+# which uses no SQL ``Enum`` type), constrained by the application.
+STATUS_PENDING = "pending"
+STATUS_APPROVED = "approved"
+STATUS_REJECTED = "rejected"
+#: Statuses that still occupy a daily-cap slot — a queued submission must not
+#: bypass the caps by sitting unreviewed, while a *rejected* one must not
+#: punish a volunteer for an honest mistake.
+COUNTED_STATUSES = (STATUS_PENDING, STATUS_APPROVED)
 
 
 def _utcnow() -> datetime:
@@ -42,11 +59,33 @@ class Transaction(Base):
         TZDateTime(), default=_utcnow, index=True, nullable=False
     )
 
+    # --- Tier 2: receipt proof + admin review --------------------------------
+    # ``status`` is always set explicitly by the service; the server default is
+    # the safe one (nothing is spendable until a human has looked at it).
+    status: Mapped[str] = mapped_column(
+        String(16), default=STATUS_PENDING, index=True, nullable=False
+    )
+    #: Public URL of the uploaded receipt (``/uploads/r<business>-<uuid>.jpg``).
+    receipt_path: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    #: SHA-256 of the receipt bytes — a second receipt image for the same
+    #: partner is rejected, so one photo cannot be recycled for many credits.
+    receipt_sha256: Mapped[str | None] = mapped_column(String(64), index=True, nullable=True)
+    reviewed_by: Mapped[int | None] = mapped_column(
+        ForeignKey("admins.id", ondelete="SET NULL"), nullable=True
+    )
+    reviewed_at: Mapped[datetime | None] = mapped_column(TZDateTime(), nullable=True)
+    rejection_reason: Mapped[str | None] = mapped_column(Text, nullable=True)
+
     user: Mapped["User"] = relationship(back_populates="transactions")  # noqa: F821
     business: Mapped["Business"] = relationship(back_populates="transactions")  # noqa: F821
+
+    @property
+    def is_pending(self) -> bool:
+        return self.status == STATUS_PENDING
 
     def __repr__(self) -> str:  # pragma: no cover
         return (
             f"<Transaction id={self.id} user={self.user_id} "
-            f"business={self.business_id} invoice={self.invoice_number!r}>"
+            f"business={self.business_id} invoice={self.invoice_number!r} "
+            f"status={self.status}>"
         )
