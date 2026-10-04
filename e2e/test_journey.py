@@ -2,8 +2,8 @@
 
 Covers the volunteer journey (login -> first-login activation modal ->
 directory -> invoice + receipt submission -> pending -> admin approval ->
-spendable reward) and the admin dashboard SSE feed (a purchase made while the
-dashboard is open is broadcast live).
+spendable reward), the admin dashboard SSE feed (a purchase made while the
+dashboard is open is broadcast live), and the admin's own password change.
 
 Requires the fixtures in conftest.py, which boot the real backend + frontend.
 Run from the repo root:
@@ -216,4 +216,30 @@ def test_admin_dashboard_sse_feed(browser, app_url: str) -> None:
 
     # --- the alert broadcasts to the dashboard in real time --------------------
     expect(admin_page.get_by_text(invoice)).to_be_visible(timeout=15000)
+    context.close()
+
+
+def test_admin_change_password_rejects_a_wrong_current_password(browser, app_url: str) -> None:
+    """The Change-password modal re-verifies the current password server-side.
+
+    Deliberately only exercises the *refusal*: every other test in this session
+    signs in as ``admin`` with the seeded password, so actually rotating it here
+    would break them (the rotation itself is covered by
+    ``backend/tests/test_admin_password.py``).
+    """
+    context = browser.new_context()
+    page = context.new_page()
+    _login_as_admin(page, app_url)
+
+    page.click("button:has-text('Change password')")
+    page.fill("#pw-current", "definitely-not-the-password")
+    page.fill("#pw-new", "another-pass-123")
+    page.fill("#pw-confirm", "another-pass-123")
+    page.click("button:has-text('Update password')")
+
+    expect(page.get_by_text("The current password is incorrect.")).to_be_visible(
+        timeout=10000
+    )
+    # The modal stays open so the operator can retry.
+    expect(page.locator("#pw-current")).to_be_visible()
     context.close()
