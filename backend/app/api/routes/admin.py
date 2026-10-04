@@ -10,6 +10,7 @@ from app.api.deps import AppSettings, CurrentAdmin, DbSession
 from app.models import Business, Transaction, User
 from app.schemas.admin import (
     AdminCreateRequest,
+    AdminPasswordChangeRequest,
     AdminUpdateRequest,
     AdminUserOut,
     DashboardMetrics,
@@ -63,6 +64,24 @@ def _admin_user_out(user: User) -> AdminUserOut:
         reward_points=user.reward_points,
         must_change_password=user.must_change_password,
         created_at=user.created_at,
+    )
+
+
+@router.post("/me/password", status_code=204)
+def change_own_password(
+    payload: AdminPasswordChangeRequest, db: DbSession, admin: CurrentAdmin
+):
+    """Rotate the signed-in admin's own password (the current one is required).
+
+    Admins are exempt from session invalidation, so other open admin tabs keep
+    working. For a *forgotten* password use ``scripts/set_admin_password.py``,
+    which is what the deployment runbook points at.
+    """
+    admin_service.change_admin_password(
+        db,
+        admin,
+        current_password=payload.current_password,
+        new_password=payload.new_password,
     )
 
 
