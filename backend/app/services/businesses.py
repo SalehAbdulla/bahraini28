@@ -154,6 +154,7 @@ def create_business(
     is_active: bool = True,
     branches: list | None = None,
     invoice_pattern: str | None = None,
+    codes_required: bool = False,
 ) -> Business:
     """Register a new merchant partnership."""
     if db.scalar(
@@ -171,6 +172,7 @@ def create_business(
         discount_percentage=discount_percentage,
         description=description,
         invoice_pattern=invoice_pattern,
+        codes_required=codes_required,
         expiry_date=expiry_date,
         is_active=is_active,
     )
@@ -210,6 +212,7 @@ def update_business(db: Session, business: Business, changes: dict) -> Business:
         "discount_percentage",
         "description",
         "invoice_pattern",
+        "codes_required",
         "expiry_date",
         "is_active",
     ):
