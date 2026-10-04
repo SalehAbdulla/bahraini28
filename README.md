@@ -41,6 +41,15 @@ Monorepo with two independent components:
   SHA-256 guard), and `pending` submissions still consume the daily caps.
   Set `REQUIRE_RECEIPT_REVIEW=false` to fall back to Tier 1 (instant credit).
   See `docs/ANTI_FRAUD_PLAN.md`.
+- **Single-use receipt codes (anti-fraud, Tier 3 — shipped)**: a partner the
+  admin flags with `codes_required` only accepts a submission that quotes an
+  **unused code the admin issued to that partner** (`B28-XXXX-XXXX`, printed on
+  the receipt), so a fabricated number can never be credited. Codes move
+  `issued → claimed → redeemed` — claimed while the submission waits in the
+  review queue, redeemed on approval, and released back to `issued` if the
+  submission is rejected (an honest mistake must not burn the only code on the
+  receipt). Admins mint batches and revoke unclaimed codes from
+  `/admin/businesses/{id}/codes`. See `docs/ANTI_FRAUD_PLAN.md`.
 - **First-login profile activation**: new accounts force a name/email/password
   update before first use.
 - **Audit trail**: every manual reward adjustment **and every invoice approval**
@@ -148,7 +157,8 @@ so the dev proxy and the production reverse proxy need no extra config.
   (CRUD / expiry override / reward adjustment / password reset / activate /
   deactivate), **business management (register / edit / logo upload /
   activate-deactivate partnerships with categories and multi-area
-  branches)**, **areas & categories management**, and master
+  branches)**, **single-use receipt-code batches (`/admin/businesses/{id}/codes`:
+  mint / filter / revoke)**, **areas & categories management**, and master
   transaction ledger.
 
 ---
