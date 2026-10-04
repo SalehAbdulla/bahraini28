@@ -42,6 +42,17 @@ class ResetPasswordRequest(BaseModel):
     new_password: str = Field(min_length=8, max_length=72)
 
 
+class AdminPasswordChangeRequest(BaseModel):
+    """An admin rotating their own password (the current one is re-verified).
+
+    Limits mirror ``schemas.auth.PasswordChangeRequest``; the 72-char ceiling is
+    bcrypt's input limit.
+    """
+
+    current_password: str = Field(min_length=1, max_length=128)
+    new_password: str = Field(min_length=8, max_length=72)
+
+
 class AdminLogEntry(ORMModel):
     id: int
     transaction_id: int | None = None
