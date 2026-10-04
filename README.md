@@ -198,7 +198,9 @@ Operational notes:
 - **SQLite → Postgres migration**: `backend/scripts/migrate_sqlite_to_postgres.py`
   (idempotent; re-syncs autoincrement sequences).
 - **CI** (`.github/workflows/ci.yml`): backend suite on SQLite **and**
-  PostgreSQL 17, plus the frontend type-check + build.
+  PostgreSQL 17, the frontend type-check + build, and the **Playwright e2e
+  suite** (volunteer journey, admin SSE feed and the balanced-gutter layout
+  guard on every touched page).
 
 ### DNS (Namecheap) → TLS
 
@@ -214,8 +216,17 @@ Boots the real stack (seeded FastAPI on :8000 + Vite on :5173) against a
 throwaway SQLite database and drives it with headless Chromium:
 
 ```bash
+.venv/bin/python -m pip install -r e2e/requirements.txt   # backend dev deps + Playwright
+.venv/bin/playwright install --with-deps chromium         # one-off browser download
 cd e2e
-../.venv/bin/python -m pytest -v    # volunteer journey + admin SSE feed
+../.venv/bin/python -m pytest -v                          # journey + layout guard
 ```
+
+`e2e/requirements.txt` also pulls in `backend/requirements-dev.txt`, because the
+suite shells out to `uvicorn` and `backend/scripts/seed.py` with the same
+interpreter that runs pytest.
+
+This suite runs in CI as the `E2E (Playwright)` job, so a broken journey or a
+layout regression fails the build rather than only showing up locally.
 
 See `docs/project-plan.md` for the original plan and todos.
