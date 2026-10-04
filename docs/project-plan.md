@@ -251,6 +251,7 @@ or any Docker host. Full artifacts in `deploy/`, run guide in `README.md`:
 - DNS (Namecheap): `A @` and `A www` → VPS IP; CAA `0 issue "letsencrypt.org"`.
 
 **Remaining operational checklist (after the VPS + DNS are live):**
-- [ ] Change the bootstrap admin password and set `SEED_DEFAULT_ADMIN=false`.
+- [ ] Change the bootstrap admin password (`scripts/set_admin_password.py`, or the
+      dashboard's *Change password*) and set `SEED_DEFAULT_ADMIN=false`.
 - [ ] Verify `https://bahraini28.com` SPA, `/api/v1` health, and the SSE feed.
 - [ ] Install the daily backup cron entry (`deploy/backup-cron.txt`) and test one restore.
