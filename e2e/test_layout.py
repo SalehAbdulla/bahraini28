@@ -4,7 +4,7 @@ The editorial design centres every page with equal left/right gutters through
 the shared `.container-page` wrapper. A regression (a stray `100vw`, a negative
 margin, an over-wide table) shows up as
 `document.documentElement.scrollWidth > window.innerWidth`. This test *measures*
-that on every page touched by the Tier 2 work, in the real browser.
+that on every page touched by the Tier 2 and Tier 3 work, in the real browser.
 
 Run from the repo root:
     cd e2e && ../.venv/bin/python -m pytest test_layout.py -v
@@ -107,7 +107,7 @@ def test_volunteer_and_admin_pages_have_balanced_gutters(browser, app_url: str) 
     admin.click("button:has-text('Sign in to dashboard')")
     admin.wait_for_url("**/admin", timeout=10000)
 
-    for path in ("/admin", "/admin/reviews"):
+    for path in ("/admin", "/admin/reviews", "/admin/businesses/1/codes"):
         _open(admin, app_url, path)
         _measure(admin, path)
     context.close()
