@@ -245,7 +245,8 @@ or any Docker host. Full artifacts in `deploy/`, run guide in `README.md`:
 - `deploy/.env.production.example` — production env template (DB credentials,
   secret keys, CORS for https://bahraini28.com). `backend/.env.example` — local.
 - CI (`.github/workflows/ci.yml`) runs the backend suite on SQLite **and**
-  PostgreSQL 17 plus the frontend build.
+  PostgreSQL 17, the frontend build, and the Playwright e2e suite
+  (`e2e/requirements.txt` declares its deps).
 - `backend/scripts/migrate_sqlite_to_postgres.py` — idempotent data migration.
 - DNS (Namecheap): `A @` and `A www` → VPS IP; CAA `0 issue "letsencrypt.org"`.
 
