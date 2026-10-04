@@ -80,15 +80,52 @@ photo *and* a matching unused invoice number, once per partner) but a
 determined volunteer can still photograph a genuine receipt and re-type its
 number. Only Tier 3 makes fabrication impossible.
 
-## Tier 3 — strongest (requires partner cooperation)
+## Tier 3 — shipped (merchant single-use receipt codes)
 
-- **Merchant one-time codes / QR**: an admin generates a batch of single-use
-  codes per partner; each code is bound to that business and printed on the
-  receipt. A fabricated number simply never matches an unused code. No merchant
-  login needed.
-- **Merchant confirmation portal**: partner staff confirm the invoice in the
-  customer's presence.
+Goal achieved for opted-in partners: a reward is now *authentic*, not merely
+*proven*. An admin issues a batch of codes to a partner, the partner prints one
+on each receipt, and the volunteer quotes it — a fabricated number simply never
+matches an issued code.
 
-Tier 3 is the only tier that makes fabrication *impossible* rather than merely
-*impractical*, but it depends on partner participation, so it is deferred until
-Tier 2 is live and partner appetite is known.
+| Control | Where | Effect |
+| --- | --- | --- |
+| Per-partner opt-in | `Business.codes_required` | Only a partner who actually prints codes requires one; everybody else keeps the Tier 1/2 flow untouched. |
+| Single-use code inventory | `InvoiceCode` (`invoice_codes`), `services/invoice_codes.py` | `B28-XXXX-XXXX`, ambiguity-free (`secrets`), globally unique and bound to one partner. |
+| Issue a batch | `POST /api/v1/admin/businesses/{id}/codes` | Mint up to 500 codes at once (optional batch label) and get them back to print. |
+| Reconcile the sheet | `GET .../{id}/codes`, `GET .../{id}/codes/stats`, `DELETE /api/v1/admin/codes/{id}` | Paginated inventory by state, lifecycle counts, and revocation of an unclaimed code. |
+| Code required at submission | `services/transactions.submit_invoice` (gate 0) | A `codes_required` partner refuses a submission with no code → 400 `invoice_code_required`. |
+| Fabrication is impossible | `services/invoice_codes.claim_for_submission` | An unknown code, or one issued to another partner, is refused → 400 `invalid_invoice_code`. |
+| One code, one reward | lifecycle `issued → claimed → redeemed` (`Transaction.code_id`) | Claimed on submission, redeemed on approval; the same code cannot back two live submissions → 409 `invoice_code_used`. |
+| Honest mistakes don't burn a code | `reject_transaction` → `invoice_codes.release` | A rejected submission returns its code to `issued`, exactly as it frees the daily slot. |
+| Migration for existing databases | `app/db/bootstrap.py::_ensure_code_columns` | Adds `businesses.codes_required` (default off) and `transactions.code_id`; the new `invoice_codes` table is built by `create_all`. |
+| Admin UI | `/admin/businesses/{id}/codes` (`frontend/src/pages/AdminBusinessCodes.tsx`) | Generate, filter, print and revoke the codes for one partner. |
+
+### Decisions taken for this tier
+
+1. **Who is opted in** — the admin, per partner, via `codes_required`. Tier 3
+   depends on the merchant printing codes, so a global switch would break every
+   partner who cannot.
+2. **Code vs invoice number** — the code is an *extra* field, not a replacement.
+   The receipt's invoice number is still recorded, so Tier 1's per-partner
+   duplicate guard keeps working alongside the code.
+3. **Rejected submissions** — the code is released, matching the daily-cap rule:
+   a blurry photo must not cost the volunteer the only code they have.
+4. **Deleted partners** — `invoice_codes` cascades with the business and
+   `transactions.code_id` is `SET NULL`, so reward history survives.
+
+### Acceptance criteria
+
+- A submission at a `codes_required` partner cannot reach `approved` without a
+  valid, unused code issued to *that* partner.
+- No code can be credited twice (`redeemed` is terminal).
+- Every code is traceable to its partner, batch, volunteer and timestamps.
+- A pre-Tier-3 database migrates with every partner left on the Tier 1/2 flow.
+- The Tier 1/2 suite keeps passing.
+
+**Honest limit:** Tier 3 makes fabrication impossible *only* while a code is
+single-use and the partner keeps the sheet. A code photographed from an unused
+receipt can still be quoted by someone else — the control bounds each printed
+receipt to one reward, which is the property that matters. A **merchant
+confirmation portal** (partner staff confirm the invoice in the customer's
+presence) would close that last gap, but it needs every partner to log in, so it
+remains deferred.
