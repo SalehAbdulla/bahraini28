@@ -28,14 +28,15 @@ async def _read_submission(
     request: Request,
     business_id: int | None,
     invoice_number: str | None,
-) -> tuple[int, str]:
-    """Return ``(business_id, invoice_number)`` from multipart *or* JSON.
+    code: str | None,
+) -> tuple[int, str, str | None]:
+    """Return ``(business_id, invoice_number, code)`` from multipart *or* JSON.
 
     Multipart is what the volunteer UI sends (it carries the receipt file); the
     JSON fallback keeps the Tier-1 contract alive for un-onboarded deployments.
     """
     if business_id is not None and invoice_number is not None:
-        return business_id, invoice_number
+        return business_id, invoice_number, code
 
     try:
         raw = await request.json()
@@ -53,7 +54,7 @@ async def _read_submission(
         payload = InvoiceSubmitRequest.model_validate(raw)
     except ValidationError as exc:
         raise RequestValidationError(exc.errors()) from exc
-    return payload.business_id, payload.invoice_number
+    return payload.business_id, payload.invoice_number, payload.code
 
 
 @router.post("", response_model=TransactionCreatedOut, status_code=201)
@@ -64,6 +65,7 @@ async def submit_invoice(
     settings: AppSettings,
     business_id: int | None = Form(None),
     invoice_number: str | None = Form(None),
+    code: str | None = Form(None),
     receipt: UploadFile | None = File(None),
 ):
     """Submit a physical-store invoice (plus receipt photo) to earn a reward.
@@ -72,9 +74,12 @@ async def submit_invoice(
     and the row is stored as ``pending``: nothing is credited until an admin
     approves it. With ``False`` the receipt is optional and the reward is
     credited immediately (Tier 1 behaviour).
+
+    A partner that sets ``codes_required`` also requires the single-use ``code``
+    printed on the receipt (anti-fraud Tier 3).
     """
-    business_id, invoice_number = await _read_submission(
-        request, business_id, invoice_number
+    business_id, invoice_number, code = await _read_submission(
+        request, business_id, invoice_number, code
     )
 
     review_required = settings.REQUIRE_RECEIPT_REVIEW
@@ -99,6 +104,7 @@ async def submit_invoice(
             user=user,
             business_id=business_id,
             invoice_number=invoice_number,
+            code=code,
             receipt_path=receipt_path,
             receipt_sha256=receipt_sha256,
             requires_receipt=review_required,
@@ -126,6 +132,7 @@ async def submit_invoice(
             "business_id": transaction.business_id,
             "business_name": transaction.business.name if transaction.business else None,
             "invoice_number": transaction.invoice_number,
+            "code": transaction.code.code if transaction.code else None,
             "reward_increment": transaction.reward_increment,
             "status": transaction.status,
             "created_at": transaction.created_at,
@@ -156,6 +163,7 @@ async def submit_invoice(
         reward_increment=transaction.reward_increment,
         created_at=transaction.created_at,
         status=transaction.status,
+        code=transaction.code.code if transaction.code else None,
         rejection_reason=transaction.rejection_reason,
         used_today=used_today,
         remaining_today=remaining,
