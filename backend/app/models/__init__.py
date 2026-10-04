@@ -3,6 +3,7 @@ from app.models.admin import Admin
 from app.models.area import Area, BusinessArea
 from app.models.business import Business
 from app.models.category import Category
+from app.models.invoice_code import InvoiceCode
 from app.models.reward_adjustment import RewardAdjustment
 from app.models.transaction import Transaction
 from app.models.user import User
@@ -13,6 +14,7 @@ __all__ = [
     "Business",
     "BusinessArea",
     "Category",
+    "InvoiceCode",
     "RewardAdjustment",
     "Transaction",
     "User",
