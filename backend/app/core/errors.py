@@ -85,10 +85,28 @@ class UsernameConflictError(AppError):
     message = "An admin with this username already exists."
 
 
+class AdminNotFoundError(AppError):
+    status_code = 404
+    code = "admin_not_found"
+    message = "Admin account not found."
+
+
 class PasswordTooShortError(AppError):
     status_code = 400
     code = "password_too_short"
     message = "Password must be at least 8 characters long."
+
+
+class InvalidCurrentPasswordError(AppError):
+    """The caller *is* authenticated but supplied the wrong current password.
+
+    Deliberately a 400 rather than a 401: the request was authorised, so the
+    frontend must not treat it as an expired session and drop the token.
+    """
+
+    status_code = 400
+    code = "invalid_current_password"
+    message = "The current password is incorrect."
 
 
 # --- Businesses --------------------------------------------------------------
