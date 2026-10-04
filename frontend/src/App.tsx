@@ -14,6 +14,7 @@ import AdminUsers from "./pages/AdminUsers";
 import AdminTransactions from "./pages/AdminTransactions";
 import AdminCatalog from "./pages/AdminCatalog";
 import AdminReviews from "./pages/AdminReviews";
+import AdminBusinessCodes from "./pages/AdminBusinessCodes";
 
 export default function App() {
   return (
@@ -54,6 +55,14 @@ export default function App() {
             element={
               <RequireAdmin>
                 <AdminBusinesses />
+              </RequireAdmin>
+            }
+          />
+          <Route
+            path="/admin/businesses/:id/codes"
+            element={
+              <RequireAdmin>
+                <AdminBusinessCodes />
               </RequireAdmin>
             }
           />
