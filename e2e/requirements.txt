@@ -1,0 +1,9 @@
+# --- E2E (Playwright) dependencies -------------------------------------------
+# The suite boots the *real* stack: e2e/conftest.py shells out to
+# `uvicorn app.main:app` and `backend/scripts/seed.py` with the same interpreter
+# that runs pytest, so the backend dev/runtime dependencies are pulled in too.
+-r ../backend/requirements-dev.txt
+
+# Browser automation. Install the Chromium binary as well:
+#     playwright install --with-deps chromium
+playwright>=1.49
