@@ -20,6 +20,7 @@ interface BizFormState {
   discount_percentage: string;
   description: string;
   invoice_pattern: string;
+  codes_required: boolean;
   expiry: string;
   is_active: boolean;
   logo: File | null;
@@ -44,6 +45,7 @@ function newForm(): BizFormState {
     discount_percentage: "0",
     description: "",
     invoice_pattern: "",
+    codes_required: false,
     expiry: toLocalInput(new Date(Date.now() + 365 * 864e5)),
     is_active: true,
     logo: null,
@@ -108,6 +110,7 @@ export default function AdminBusinesses() {
       discount_percentage: String(b.discount_percentage),
       description: b.description ?? "",
       invoice_pattern: b.invoice_pattern ?? "",
+      codes_required: b.codes_required,
       expiry: toLocalInput(b.expiry_date),
       is_active: b.is_active,
       logo: null,
@@ -155,6 +158,7 @@ export default function AdminBusinesses() {
       discount_percentage: discount,
       description: form.description.trim() || null,
       invoice_pattern: form.invoice_pattern.trim() || null,
+      codes_required: form.codes_required,
       expiry_date: new Date(form.expiry).toISOString(),
       is_active: form.is_active,
       branches: form.branches
@@ -284,6 +288,9 @@ export default function AdminBusinesses() {
                     )}
                   </td>
                   <td className="px-4 py-2 text-right whitespace-nowrap">
+                    <Link to={`/admin/businesses/${b.id}/codes`} className="btn-secondary mr-1">
+                      Codes
+                    </Link>
                     <button className="btn-secondary mr-1" onClick={() => openEdit(b)}>Edit</button>
                     <button className="btn-secondary" onClick={() => toggleActive(b)}>
                       {b.is_active ? "Deactivate" : "Activate"}
@@ -355,6 +362,19 @@ export default function AdminBusinesses() {
                 <div className="sm:col-span-2 flex items-center gap-2">
                   <input id="biz-active" type="checkbox" checked={form.is_active} onChange={(e) => setForm((f) => ({ ...f, is_active: e.target.checked }))} />
                   <label htmlFor="biz-active" className="text-sm font-medium text-slate-700">Active partnership</label>
+                </div>
+                <div className="sm:col-span-2">
+                  <div className="flex items-center gap-2">
+                    <input id="biz-codes" type="checkbox" checked={form.codes_required} onChange={(e) => setForm((f) => ({ ...f, codes_required: e.target.checked }))} />
+                    <label htmlFor="biz-codes" className="text-sm font-medium text-slate-700">
+                      Require a single-use receipt code
+                    </label>
+                  </div>
+                  <p className="mt-1 text-xs text-slate-500">
+                    When enabled, a submission must quote a code you issue for this partner, so a
+                    fabricated number can never be credited. Issue and print codes from the partner's
+                    “Codes” page.
+                  </p>
                 </div>
                 <div className="sm:col-span-2">
                   <label htmlFor="biz-logo" className="block text-sm font-medium text-slate-700">Logo (optional)</label>
