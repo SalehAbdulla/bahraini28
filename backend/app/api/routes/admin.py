@@ -29,6 +29,10 @@ from app.schemas.business import (
     CategoryCreate,
     CategoryOut,
     CategoryUpdate,
+    InvoiceCodeBatchCreate,
+    InvoiceCodeBatchOut,
+    InvoiceCodeOut,
+    InvoiceCodeStats,
 )
 from app.schemas.common import Page
 from app.schemas.transaction import (
@@ -38,6 +42,7 @@ from app.schemas.transaction import (
 )
 from app.services import admin as admin_service
 from app.services import businesses as business_service
+from app.services import invoice_codes as code_service
 from app.services import transactions as tx_service
 from app.services import users as user_service
 from app.services.notifications import bus
@@ -257,6 +262,7 @@ def transaction_ledger(
                 reward_increment=t.reward_increment,
                 created_at=t.created_at,
                 status=t.status,
+                code=t.code.code if t.code else None,
                 rejection_reason=t.rejection_reason,
             )
             for t in items
@@ -280,6 +286,7 @@ def _review_out(t: Transaction) -> TransactionReviewOut:
         reward_increment=t.reward_increment,
         created_at=t.created_at,
         status=t.status,
+        code=t.code.code if t.code else None,
         rejection_reason=t.rejection_reason,
         user_id=t.user_id,
         user_name=t.user.name if t.user else None,
@@ -366,6 +373,7 @@ def _admin_business_out(b: Business) -> AdminBusinessOut:
         discount_percentage=b.discount_percentage,
         description=b.description,
         invoice_pattern=b.invoice_pattern,
+        codes_required=b.codes_required,
         is_active=b.is_active,
         expiry_date=b.expiry_date,
         branches=[
@@ -423,6 +431,7 @@ def create_business(
         is_active=payload.is_active,
         branches=payload.branches,
         invoice_pattern=payload.invoice_pattern,
+        codes_required=payload.codes_required,
     )
     return _admin_business_out(business_service.get_business_full(db, business.id))
 
@@ -473,6 +482,91 @@ async def upload_business_logo(
     db.commit()
     db.expire(business)
     return _admin_business_out(business_service.get_business_full(db, business_id))
+
+
+# --- Anti-fraud Tier 3: single-use merchant receipt codes ----------------------
+
+
+def _code_out(code) -> InvoiceCodeOut:
+    return InvoiceCodeOut(
+        id=code.id,
+        business_id=code.business_id,
+        code=code.code,
+        status=code.status,
+        batch=code.batch,
+        created_at=code.created_at,
+        claimed_at=code.claimed_at,
+        redeemed_at=code.redeemed_at,
+        claimed_by_user_id=code.claimed_by_user_id,
+        claimed_by_user_name=code.claimed_by_user.name if code.claimed_by_user else None,
+    )
+
+
+@router.get("/businesses/{business_id}/codes", response_model=Page[InvoiceCodeOut])
+def list_business_codes(
+    business_id: int,
+    db: DbSession,
+    admin: CurrentAdmin,
+    status: str | None = Query(
+        None, pattern="^(issued|claimed|redeemed|revoked|all)$"
+    ),
+    page: int = Query(1, ge=1),
+    page_size: int = Query(20, ge=1, le=200),
+):
+    """The single-use codes issued to one partner (newest first)."""
+    business_service.get_business_or_404(db, business_id)
+    items, total = code_service.list_codes(
+        db,
+        business_id=business_id,
+        status=None if status in (None, "all") else status,
+        page=page,
+        page_size=page_size,
+    )
+    return Page[InvoiceCodeOut](
+        items=[_code_out(c) for c in items],
+        total=total,
+        page=page,
+        page_size=page_size,
+        pages=math.ceil(total / page_size) if total else 0,
+    )
+
+
+@router.get("/businesses/{business_id}/codes/stats", response_model=InvoiceCodeStats)
+def business_code_stats(business_id: int, db: DbSession, admin: CurrentAdmin):
+    """Lifecycle counts (issued / claimed / redeemed / revoked) for a partner."""
+    business_service.get_business_or_404(db, business_id)
+    return InvoiceCodeStats(**code_service.code_stats(db, business_id))
+
+
+@router.post(
+    "/businesses/{business_id}/codes",
+    response_model=InvoiceCodeBatchOut,
+    status_code=201,
+)
+def generate_business_codes(
+    business_id: int,
+    payload: InvoiceCodeBatchCreate,
+    db: DbSession,
+    admin: CurrentAdmin,
+):
+    """Mint a batch of single-use codes for a partner (returned so they can be
+    printed straight away)."""
+    business = business_service.get_business_or_404(db, business_id)
+    codes = code_service.create_batch(
+        db,
+        business_id=business.id,
+        count=payload.count,
+        batch=payload.batch,
+        admin_id=admin.id,
+    )
+    return InvoiceCodeBatchOut(items=[_code_out(c) for c in codes], created=len(codes))
+
+
+@router.delete("/codes/{code_id}", response_model=InvoiceCodeOut)
+def revoke_invoice_code(code_id: int, db: DbSession, admin: CurrentAdmin):
+    """Revoke a code that was never claimed — e.g. a sheet that was lost."""
+    code = code_service.get_code_or_404(db, code_id)
+    return _code_out(code_service.revoke_code(db, code))
 
 
 # --- Catalog management (areas & categories) ----------------------------------
