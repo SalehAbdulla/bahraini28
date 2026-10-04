@@ -18,6 +18,9 @@ class InvoiceSubmitRequest(BaseModel):
 
     business_id: int = Field(gt=0)
     invoice_number: str = Field(min_length=3, max_length=64)
+    #: Tier 3: the single-use code printed on the receipt. Required only by
+    #: partners that set ``codes_required``; optional elsewhere.
+    code: str | None = Field(None, max_length=32)
 
 
 class TransactionOut(ORMModel):
@@ -29,6 +32,9 @@ class TransactionOut(ORMModel):
     created_at: datetime
     #: ``pending`` | ``approved`` | ``rejected`` (see ``models.transaction``).
     status: str
+    #: Tier 3 single-use receipt code, when one was used. Never exposed on the
+    #: public per-business list — like the rejection note, it stays private.
+    code: str | None = None
     #: Only ever populated on the volunteer's *own* history — never on the
     #: public per-business list, so a rejection note stays private.
     rejection_reason: str | None = None
