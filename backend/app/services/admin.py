@@ -10,9 +10,15 @@ from datetime import datetime, timezone
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
-from app.core.errors import CprConflictError, EmailConflictError
-from app.core.security import hash_password
+from app.core.errors import (
+    AdminNotFoundError,
+    CprConflictError,
+    EmailConflictError,
+    InvalidCurrentPasswordError,
+)
+from app.core.security import hash_password, verify_password
 from app.models import (
+    Admin,
     Business,
     RewardAdjustment,
     Transaction,
@@ -102,6 +108,43 @@ def reset_password(db: Session, user: User, new_password: str) -> None:
     user.token_version += 1
     db.add(user)
     db.commit()
+
+
+# --- admin accounts -----------------------------------------------------------
+
+
+def change_admin_password(
+    db: Session, admin: Admin, *, current_password: str, new_password: str
+) -> None:
+    """Rotate an admin's **own** password after re-checking the current one.
+
+    Admins are exempt from single-session enforcement (they carry no
+    ``token_version``), so this cannot sign other admin tabs out — the same
+    exemption that lets several dashboards share one login.
+    """
+    if not verify_password(current_password, admin.password_hash):
+        raise InvalidCurrentPasswordError
+    admin.password_hash = hash_password(new_password)
+    db.add(admin)
+    db.commit()
+
+
+def set_admin_password(db: Session, *, username: str, new_password: str) -> Admin:
+    """Reset an admin's password **without** knowing the current one.
+
+    This is the recovery / provisioning path behind
+    ``scripts/set_admin_password.py``: the bootstrap password that ``deploy/.env``
+    generated must be replaceable before anyone has ever logged in, and a lost
+    password must be recoverable by whoever controls the deployment.
+    """
+    admin = db.scalar(select(Admin).where(Admin.username == username))
+    if admin is None:
+        raise AdminNotFoundError(f"No admin account named {username!r}.")
+    admin.password_hash = hash_password(new_password)
+    db.add(admin)
+    db.commit()
+    db.refresh(admin)
+    return admin
 
 
 def adjust_rewards(db: Session, user: User, delta: int, reason: str, admin_id: int) -> None:
