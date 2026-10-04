@@ -66,3 +66,29 @@ jobs:
       - name: Build (tsc + vite)
         working-directory: frontend
         run: npm run build
+
+  e2e:
+    name: E2E (Playwright)
+    runs-on: ubuntu-latest
+    # Boots uvicorn on :8000, the Vite dev server on :5173 and headless
+    # Chromium, then drives the real stack (see e2e/conftest.py). The ceiling
+    # only guards against a server that never comes up.
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.14"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install backend + e2e dependencies
+        run: pip install -r e2e/requirements.txt
+      - name: Install Chromium (+ OS dependencies)
+        run: playwright install --with-deps chromium
+      - name: Install frontend dependencies
+        working-directory: frontend
+        run: npm ci
+      - name: Run the e2e suite
+        working-directory: e2e
+        run: pytest -v
