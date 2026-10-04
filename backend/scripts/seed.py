@@ -5,21 +5,27 @@ Usage (from the backend/ directory):
     PYTHONPATH=. ../.venv/bin/python scripts/seed.py
 
 Requires ``SEED_DEFAULT_ADMIN`` (the app already creates the initial admin on
-startup when enabled); this script adds sample categories, areas, businesses
-and a demo volunteer account.
+startup when enabled); this script adds sample categories, areas, businesses,
+a demo volunteer account, and a batch of single-use receipt codes for the
+partner that requires them (anti-fraud Tier 3) — so the code-required flow is
+visible on a fresh demo run.
+
+Every step is idempotent: a row matched on its natural key is left untouched, and
+the demo code batch is only minted while the partner has none.
 """
 from __future__ import annotations
 
 from datetime import datetime, timedelta, timezone
 
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from app.core.config import get_settings
 from app.core.security import hash_password
 from app.db.session import SessionLocal, engine
 from app.db.base import Base
-from app.models import Area, Business, BusinessArea, Category, User
+from app.models import Area, Business, BusinessArea, Category, InvoiceCode, User
+from app.services.invoice_codes import create_batch
 
 
 def _now() -> datetime:
@@ -104,6 +110,19 @@ def seed() -> None:
                 "desc": "Gym memberships and personal training.",
                 "areas": [(0, "FitLab – Muharraq"), (3, "FitLab – Seef")],
             },
+            {
+                # Anti-fraud Tier 3: this partner prints a single-use code on each
+                # receipt, so a submission must quote one (minted below). Named to
+                # sort *last* in the directory, so a code-required partner never
+                # becomes the "first card" that tooling (e2e) clicks by default.
+                "name": "Zaytoun Grocers",
+                "cr": "CR-1006",
+                "category": "retail",
+                "discount": 12,
+                "desc": "Fresh produce and pantry staples; prints a single-use receipt code.",
+                "codes_required": True,
+                "areas": [(1, "Zaytoun – Riffa"), (4, "Zaytoun – Juffair")],
+            },
         ]
         bz_objs: list[Business] = []
         for spec in businesses:
@@ -119,6 +138,8 @@ def seed() -> None:
                     description=spec["desc"],
                     is_active=True,
                     expiry_date=_tznow(365),
+                    # Tier 3 opt-in — absent from every partner but Zaytoun.
+                    codes_required=spec.get("codes_required", False),
                 )
                 db.add(business)
                 db.flush()
@@ -151,9 +172,38 @@ def seed() -> None:
             )
         db.commit()
 
+        # --- demo single-use codes (anti-fraud Tier 3) ---------------------------
+        # Minted once: re-running the seed must not stack up codes. Attribution is
+        # left null because this runs *before* the app creates the bootstrap admin
+        # (see run.sh and e2e/conftest.py).
+        code_partner = next((b for b in bz_objs if b.codes_required), None)
+        if code_partner is not None:
+            already = db.scalar(
+                select(func.count(InvoiceCode.id)).where(
+                    InvoiceCode.business_id == code_partner.id
+                )
+            )
+            if already:
+                print(
+                    f"{code_partner.name}: {already} demo code(s) already exist; skipping."
+                )
+            else:
+                codes = create_batch(
+                    db,
+                    business_id=code_partner.id,
+                    count=5,
+                    batch="demo-sheet",
+                    admin_id=None,
+                )
+                print(f"Demo single-use codes for {code_partner.name}:")
+                for code in codes:
+                    print(f"  {code.code}")
+
     print("Seed complete. Demo login:")
     print("  User : volunteer@example.com / volunteer123")
     print("  Admin: admin / admin123")
+    print("  Tier 3: Zaytoun Grocers requires a receipt code — issue and print")
+    print("          codes at /admin/businesses/<id>/codes")
 
 
 if __name__ == "__main__":
