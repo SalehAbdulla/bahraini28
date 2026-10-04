@@ -28,6 +28,10 @@ class Business(Base):
     # Optional per-partner validation regex (full match) applied to submitted
     # invoice numbers. Falls back to INVOICE_DEFAULT_PATTERN when NULL.
     invoice_pattern: Mapped[str | None] = mapped_column(String(160), nullable=True)
+    # Anti-fraud Tier 3: when True, a submission must quote a single-use code the
+    # admin issued to this partner, instead of a free-typed invoice number.
+    # Opt-in per partner, because Tier 3 depends on the merchant printing codes.
+    codes_required: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
     # Partnership validity — bookings stop after this date.
     expiry_date: Mapped[datetime] = mapped_column(TZDateTime(), nullable=False)
@@ -46,6 +50,9 @@ class Business(Base):
         back_populates="business", cascade="all, delete-orphan"
     )
     transactions: Mapped[list["Transaction"]] = relationship(  # noqa: F821
+        back_populates="business", cascade="all, delete-orphan"
+    )
+    invoice_codes: Mapped[list["InvoiceCode"]] = relationship(  # noqa: F821
         back_populates="business", cascade="all, delete-orphan"
     )
 
