@@ -182,7 +182,15 @@ cd /opt/bahraini28
 
 First boot creates the bootstrap admin (`admin` / password from `deploy/.env`).
 **Change that password immediately, then set `SEED_DEFAULT_ADMIN=false`** so the
-bootstrap account can't be recreated. Optional demo data:
+bootstrap account can't be recreated. Use the dashboard's *Change password*
+button, or — before the first login, and for recovery — the CLI:
+
+```bash
+docker compose -f deploy/docker-compose.yml run --rm backend \
+    python scripts/set_admin_password.py --username admin
+```
+
+Optional demo data:
 
 ```bash
 docker compose -f deploy/docker-compose.yml run --rm backend python scripts/seed.py
@@ -190,6 +198,11 @@ docker compose -f deploy/docker-compose.yml run --rm backend python scripts/seed
 
 Operational notes:
 
+- **Admin credentials**: the dashboard's *Change password* button posts to
+  `POST /api/v1/admin/me/password` (the current password is re-verified).
+  `scripts/set_admin_password.py` covers the bootstrap rotation and
+  lost-password recovery, when no admin session exists yet. Admins are exempt
+  from single-session invalidation, so rotating does not sign other tabs out.
 - **One uvicorn worker on purpose**: the SSE admin feed uses an in-process
   pub/sub bus. Swap it for Redis pub/sub (same API surface) before scaling.
 - **Backups**: `deploy/backup.sh` — daily `pg_dump` (custom format) + uploads
