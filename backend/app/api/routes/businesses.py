@@ -92,6 +92,7 @@ def business_detail(business_id: int, db: DbSession):
         category_name=business.category.name if business.category else None,
         discount_percentage=business.discount_percentage,
         description=business.description,
+        codes_required=business.codes_required,
         is_active=business.is_active,
         expiry_date=business.expiry_date,
         areas=[
