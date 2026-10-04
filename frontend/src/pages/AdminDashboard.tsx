@@ -1,6 +1,6 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState, type FormEvent } from "react";
 import { Link } from "react-router-dom";
-import { api } from "../api/client";
+import { api, RequestError } from "../api/client";
 import { useAuth } from "../auth/AuthContext";
 import { fmtDate } from "./BusinessDetail";
 import type { DashboardMetrics } from "../types";
@@ -54,6 +54,56 @@ export default function AdminDashboard() {
     return () => es.close();
   }, [adminToken]);
 
+  // --- change own password (anti-lockout: the current one is re-verified) -----
+  const [pwOpen, setPwOpen] = useState(false);
+  const [pwCurrent, setPwCurrent] = useState("");
+  const [pwNew, setPwNew] = useState("");
+  const [pwConfirm, setPwConfirm] = useState("");
+  const [pwError, setPwError] = useState("");
+  const [pwNotice, setPwNotice] = useState("");
+  const [pwBusy, setPwBusy] = useState(false);
+
+  const closePassword = () => {
+    setPwOpen(false);
+    setPwCurrent("");
+    setPwNew("");
+    setPwConfirm("");
+    setPwError("");
+    setPwNotice("");
+  };
+
+  const submitPassword = async (e: FormEvent) => {
+    e.preventDefault();
+    setPwError("");
+    setPwNotice("");
+    if (pwNew.length < 8) {
+      setPwError("The new password must be at least 8 characters.");
+      return;
+    }
+    if (pwNew !== pwConfirm) {
+      setPwError("The two new passwords do not match.");
+      return;
+    }
+    setPwBusy(true);
+    try {
+      await api("/admin/me/password", {
+        method: "POST",
+        admin: true,
+        body: { current_password: pwCurrent, new_password: pwNew },
+      });
+      setPwCurrent("");
+      setPwNew("");
+      setPwConfirm("");
+      setPwNotice("Password updated — use it the next time you sign in.");
+    } catch (err) {
+      setPwError(
+        err instanceof RequestError ? err.message : "Could not change the password."
+      );
+    } finally {
+      setPwBusy(false);
+    }
+  };
+
   const tiles: Array<{ label: string; value: number; cls: string }> = metrics
     ? [
         { label: "Total users", value: metrics.total_users, cls: "text-slate-900" },
@@ -82,6 +132,9 @@ export default function AdminDashboard() {
           <Link to="/admin/businesses" className="btn-secondary">Businesses</Link>
           <Link to="/admin/catalog" className="btn-secondary">Areas &amp; Categories</Link>
           <Link to="/admin/transactions" className="btn-secondary">Ledger</Link>
+          <button onClick={() => setPwOpen(true)} className="btn-secondary">
+            Change password
+          </button>
           <button onClick={adminLogout} className="btn-secondary">Sign out</button>
         </div>
       </div>
@@ -156,6 +209,89 @@ export default function AdminDashboard() {
           )}
         </div>
       </div>
+
+      {pwOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 p-4">
+          <div className="w-full max-w-md bg-white rounded-2xl border border-slate-200 shadow-lg p-6">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <h2 className="text-lg font-semibold text-slate-900">Change password</h2>
+                <p className="mt-1 text-sm text-slate-500">
+                  Your current password is required. Other open admin tabs stay signed in.
+                </p>
+              </div>
+              <button type="button" className="btn-secondary" onClick={closePassword}>
+                ✕
+              </button>
+            </div>
+            <form onSubmit={submitPassword} className="mt-4 space-y-3">
+              <div>
+                <label htmlFor="pw-current" className="block text-sm font-medium text-slate-700">
+                  Current password
+                </label>
+                <input
+                  id="pw-current"
+                  type="password"
+                  className="input-field mt-1"
+                  autoComplete="current-password"
+                  required
+                  value={pwCurrent}
+                  onChange={(e) => setPwCurrent(e.target.value)}
+                />
+              </div>
+              <div>
+                <label htmlFor="pw-new" className="block text-sm font-medium text-slate-700">
+                  New password
+                </label>
+                <input
+                  id="pw-new"
+                  type="password"
+                  className="input-field mt-1"
+                  autoComplete="new-password"
+                  required
+                  minLength={8}
+                  maxLength={72}
+                  value={pwNew}
+                  onChange={(e) => setPwNew(e.target.value)}
+                />
+                <p className="mt-1 text-xs text-slate-500">At least 8 characters.</p>
+              </div>
+              <div>
+                <label htmlFor="pw-confirm" className="block text-sm font-medium text-slate-700">
+                  Repeat the new password
+                </label>
+                <input
+                  id="pw-confirm"
+                  type="password"
+                  className="input-field mt-1"
+                  autoComplete="new-password"
+                  required
+                  value={pwConfirm}
+                  onChange={(e) => setPwConfirm(e.target.value)}
+                />
+              </div>
+              {pwError && (
+                <div className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2">
+                  {pwError}
+                </div>
+              )}
+              {pwNotice && (
+                <div className="text-sm text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-lg px-3 py-2">
+                  {pwNotice}
+                </div>
+              )}
+              <div className="flex gap-3">
+                <button type="submit" className="btn-primary" disabled={pwBusy}>
+                  {pwBusy ? "Saving…" : "Update password"}
+                </button>
+                <button type="button" className="btn-secondary" onClick={closePassword}>
+                  Close
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </>
   );
 }
