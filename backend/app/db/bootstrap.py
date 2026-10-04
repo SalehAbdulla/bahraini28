@@ -17,6 +17,11 @@ Tier 2 (receipt proof + admin approval)
   backfill that marks every pre-existing row ``approved`` (those rewards were
   credited instantly under Tier 1 and must not disappear).
 
+Tier 3 (single-use merchant receipt codes)
+* ``businesses.codes_required`` (per-partner opt-in) and ``transactions.code_id``
+  (the code a submission spent). The ``invoice_codes`` table itself is *new*, so
+  ``create_all`` builds it; only the two columns need reconciling here.
+
 Every step is guarded by an inspector so it runs at most once and is a no-op on
 a fresh database. Failures are swallowed and logged: a reconciliation problem
 must never stop the app from booting.
@@ -186,12 +191,58 @@ def _ensure_review_columns(engine: Engine) -> None:
         logger.info("bootstrap: added transactions columns %s", ", ".join(added))
 
 
+def _ensure_code_columns(engine: Engine) -> None:
+    """Add the Tier 3 columns (per-partner ``codes_required`` + ``code_id``).
+
+    ``invoice_codes`` is a brand-new table, so ``create_all`` has already built
+    it; only the two new columns on *existing* tables are reconciled here.
+    """
+    inspector = inspect(engine)
+    tables = set(inspector.get_table_names())
+    # Dialect-appropriate literal for the ``NOT NULL DEFAULT`` on the new flag.
+    bool_default = "false" if engine.dialect.name == "postgresql" else "0"
+
+    if "businesses" in tables:
+        columns = {c["name"] for c in inspector.get_columns("businesses")}
+        if "codes_required" not in columns:
+            with engine.begin() as conn:
+                conn.execute(
+                    text(
+                        'ALTER TABLE businesses ADD COLUMN "codes_required" '
+                        f"BOOLEAN NOT NULL DEFAULT {bool_default}"
+                    )
+                )
+            logger.info("bootstrap: added businesses.codes_required")
+
+    if "transactions" in tables:
+        columns = {c["name"] for c in inspector.get_columns("transactions")}
+        if "code_id" not in columns:
+            # Attach the FK only when its target table already exists, so the
+            # migration also works against a pre-Tier-3 schema in isolation.
+            column_type = "INTEGER"
+            if "invoice_codes" in tables:
+                column_type = "INTEGER REFERENCES invoice_codes(id) ON DELETE SET NULL"
+            with engine.begin() as conn:
+                conn.execute(
+                    text(f'ALTER TABLE transactions ADD COLUMN "code_id" {column_type}')
+                )
+            logger.info("bootstrap: added transactions.code_id")
+        with engine.begin() as conn:
+            conn.execute(
+                text(
+                    "CREATE INDEX IF NOT EXISTS ix_transactions_code_id "
+                    "ON transactions (code_id)"
+                )
+            )
+
+
 def reconcile_schema(engine: Engine) -> None:
     """Apply additive schema changes (Tier 1 + Tier 2) to an existing database."""
     for step in (
         _ensure_invoice_pattern_column,
         _widen_invoice_uniqueness,
         _ensure_review_columns,
+        _ensure_code_columns,
     ):
         try:
             step(engine)
