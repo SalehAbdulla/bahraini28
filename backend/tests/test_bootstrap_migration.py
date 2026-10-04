@@ -9,6 +9,7 @@ asserts the migration:
 * tightens invoice uniqueness to ``(business_id, invoice_number)``;
 * adds the Tier 2 review columns and backfills existing rows to ``approved`` so
   no historical reward is lost;
+* adds the Tier 3 ``businesses.codes_required`` / ``transactions.code_id`` columns;
 * is idempotent (safe to run on every boot).
 
 Kept as a real test rather than a scratch script so the guarantee survives.
@@ -197,3 +198,55 @@ def test_reconcile_review_columns_is_idempotent(legacy_engine):
             text("SELECT status FROM transactions WHERE invoice_number = 'NEW-1'")
         ).scalar()
     assert status == "rejected"
+
+
+# --- Tier 3: single-use receipt codes ------------------------------------------
+
+
+def test_reconcile_adds_code_columns(legacy_engine):
+    assert "codes_required" not in {
+        c["name"] for c in inspect(legacy_engine).get_columns("businesses")
+    }
+    assert "code_id" not in {
+        c["name"] for c in inspect(legacy_engine).get_columns("transactions")
+    }
+
+    reconcile_schema(legacy_engine)
+
+    assert "codes_required" in {
+        c["name"] for c in inspect(legacy_engine).get_columns("businesses")
+    }
+    assert "code_id" in {
+        c["name"] for c in inspect(legacy_engine).get_columns("transactions")
+    }
+
+
+def test_reconcile_code_flag_defaults_to_off_for_legacy_rows(legacy_engine):
+    """Existing partners must keep the free-typed invoice flow (Tier 1/2)."""
+    with legacy_engine.begin() as conn:
+        conn.execute(
+            text(
+                "INSERT INTO businesses (id, name, discount_percentage) "
+                "VALUES (1, 'Legacy Partner', 10)"
+            )
+        )
+
+    reconcile_schema(legacy_engine)
+
+    with legacy_engine.begin() as conn:
+        flag = conn.execute(
+            text("SELECT codes_required FROM businesses WHERE id = 1")
+        ).scalar()
+    assert flag in (0, False)
+
+
+def test_reconcile_code_columns_is_idempotent(legacy_engine):
+    reconcile_schema(legacy_engine)
+    reconcile_schema(legacy_engine)  # second boot must not raise
+
+    assert "codes_required" in {
+        c["name"] for c in inspect(legacy_engine).get_columns("businesses")
+    }
+    assert "code_id" in {
+        c["name"] for c in inspect(legacy_engine).get_columns("transactions")
+    }
