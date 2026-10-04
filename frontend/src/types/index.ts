@@ -41,6 +41,8 @@ export interface BusinessDetail {
   discount_percentage: number;
   description: string | null;
   invoice_pattern: string | null;
+  /** True when this partner prints single-use codes (anti-fraud Tier 3). */
+  codes_required: boolean;
   is_active: boolean;
   expiry_date: string;
   areas: BusinessAreaOut[];
@@ -82,6 +84,7 @@ export interface AdminBusinessOut {
   discount_percentage: number;
   description: string | null;
   invoice_pattern: string | null;
+  codes_required: boolean;
   is_active: boolean;
   expiry_date: string;
   branches: Array<{
@@ -107,6 +110,8 @@ export interface TransactionOut {
   reward_increment: number;
   created_at: string;
   status: TransactionStatus;
+  /** Tier 3 single-use receipt code, when the partner requires one. */
+  code: string | null;
   /** Only ever populated on the volunteer's own history. */
   rejection_reason: string | null;
 }
@@ -132,6 +137,35 @@ export interface Page<T> {
   page: number;
   page_size: number;
   pages: number;
+}
+
+/** Lifecycle of a single-use merchant receipt code (anti-fraud Tier 3). */
+export type InvoiceCodeStatus = "issued" | "claimed" | "redeemed" | "revoked";
+
+export interface InvoiceCodeOut {
+  id: number;
+  business_id: number;
+  code: string;
+  status: InvoiceCodeStatus;
+  batch: string | null;
+  created_at: string;
+  claimed_at: string | null;
+  redeemed_at: string | null;
+  claimed_by_user_id: number | null;
+  claimed_by_user_name: string | null;
+}
+
+export interface InvoiceCodeBatchOut {
+  items: InvoiceCodeOut[];
+  created: number;
+}
+
+export interface InvoiceCodeStats {
+  issued: number;
+  claimed: number;
+  redeemed: number;
+  revoked: number;
+  total: number;
 }
 
 export interface AdminUserOut extends UserProfile {
