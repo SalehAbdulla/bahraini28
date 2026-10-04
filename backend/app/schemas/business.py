@@ -27,6 +27,9 @@ class BusinessDetail(ORMModel):
     discount_percentage: int
     description: str | None = None
     invoice_pattern: str | None = None
+    #: True when this partner prints single-use codes, so the submission form
+    #: must ask for one (anti-fraud Tier 3).
+    codes_required: bool = False
     is_active: bool
     expiry_date: datetime
     areas: list[BusinessAreaOut] = []
@@ -119,6 +122,8 @@ class AdminBusinessCreate(BaseModel):
     invoice_pattern: str | None = Field(None, max_length=160)
     expiry_date: datetime
     is_active: bool = True
+    #: Opt the partner into Tier 3: submissions must quote an issued code.
+    codes_required: bool = False
     branches: list[BusinessBranchIn] = []
 
 
@@ -135,6 +140,7 @@ class AdminBusinessUpdate(BaseModel):
     invoice_pattern: str | None = Field(None, max_length=160)
     expiry_date: datetime | None = None
     is_active: bool | None = None
+    codes_required: bool | None = None
     branches: list[BusinessBranchIn] | None = None
 
 
@@ -148,8 +154,51 @@ class AdminBusinessOut(ORMModel):
     discount_percentage: int
     description: str | None = None
     invoice_pattern: str | None = None
+    codes_required: bool = False
     is_active: bool
     expiry_date: datetime
     branches: list[BusinessBranchOut] = []
     created_at: datetime
     updated_at: datetime
+
+
+# --- Anti-fraud Tier 3: single-use merchant receipt codes ----------------------
+
+
+class InvoiceCodeBatchCreate(BaseModel):
+    """Mint ``count`` single-use codes for one partner."""
+
+    count: int = Field(5, ge=1, le=500)
+    #: Optional label so a printed sheet can be traced to the batch it came from.
+    batch: str | None = Field(None, max_length=60)
+
+
+class InvoiceCodeOut(ORMModel):
+    id: int
+    business_id: int
+    code: str
+    #: ``issued`` | ``claimed`` | ``redeemed`` | ``revoked``.
+    status: str
+    batch: str | None = None
+    created_at: datetime
+    claimed_at: datetime | None = None
+    redeemed_at: datetime | None = None
+    claimed_by_user_id: int | None = None
+    claimed_by_user_name: str | None = None
+
+
+class InvoiceCodeBatchOut(BaseModel):
+    """The codes just minted (also returned so a sheet can be printed at once)."""
+
+    items: list[InvoiceCodeOut]
+    created: int
+
+
+class InvoiceCodeStats(BaseModel):
+    """Lifecycle counts for one partner's code inventory."""
+
+    issued: int = 0
+    claimed: int = 0
+    redeemed: int = 0
+    revoked: int = 0
+    total: int = 0
