@@ -20,6 +20,9 @@ export default function BusinessDetail() {
   const [notFound, setNotFound] = useState(false);
 
   const [invoice, setInvoice] = useState("");
+  // Anti-fraud Tier 3: the single-use code printed on the receipt, for partners
+  // that require one.
+  const [code, setCode] = useState("");
   const [receipt, setReceipt] = useState<File | null>(null);
   const receiptInput = useRef<HTMLInputElement>(null);
   const [result, setResult] = useState<TransactionCreatedOut | null>(null);
@@ -45,6 +48,10 @@ export default function BusinessDetail() {
       setError("Attach a photo or PDF of your receipt.");
       return;
     }
+    if (business?.codes_required && !code.trim()) {
+      setError("Enter the single-use code printed on your receipt.");
+      return;
+    }
     setError("");
     setResult(null);
     setBusy(true);
@@ -55,11 +62,13 @@ export default function BusinessDetail() {
         fields: {
           business_id: String(businessId),
           invoice_number: invoice.trim(),
+          ...(code.trim() ? { code: code.trim() } : {}),
         },
         fileField: "receipt",
       });
       setResult(res);
       setInvoice("");
+      setCode("");
       setReceipt(null);
       if (receiptInput.current) receiptInput.current.value = "";
       setHistory((prev) => [
@@ -71,6 +80,7 @@ export default function BusinessDetail() {
           reward_increment: res.reward_increment,
           created_at: res.created_at,
           status: res.status,
+          code: res.code,
           rejection_reason: res.rejection_reason,
         },
         ...prev,
@@ -142,8 +152,29 @@ export default function BusinessDetail() {
           (or PDF) of that receipt. Each invoice can be credited once, there is a
           daily cap per partner and overall (resets at midnight), and your reward
           is credited once the receipt has been reviewed.
+          {business.codes_required &&
+            " This partner prints a single-use code on each receipt — enter it below."}
         </p>
         <form onSubmit={submitInvoice} className="mt-4 space-y-3">
+          {business.codes_required && (
+            <div>
+              <label htmlFor="receipt-code" className="block text-sm font-medium text-ink-800">
+                Receipt code
+              </label>
+              <input
+                id="receipt-code"
+                className="input-field mt-1 font-mono uppercase"
+                placeholder="B28-XXXX-XXXX"
+                required
+                maxLength={32}
+                value={code}
+                onChange={(e) => setCode(e.target.value)}
+              />
+              <p className="mt-1 text-xs text-ink-800/60">
+                The single-use code printed on your receipt. It can be used once.
+              </p>
+            </div>
+          )}
           <div className="flex gap-3 flex-wrap">
             <input
               className="input-field flex-1 min-w-[220px]"
