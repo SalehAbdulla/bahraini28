@@ -76,8 +76,17 @@ class Transaction(Base):
     reviewed_at: Mapped[datetime | None] = mapped_column(TZDateTime(), nullable=True)
     rejection_reason: Mapped[str | None] = mapped_column(Text, nullable=True)
 
+    # --- Tier 3: single-use merchant receipt code ----------------------------
+    #: The one-time code this submission spent (``None`` when the partner does
+    #: not require codes). Kept ``SET NULL`` so the transaction — and the reward
+    #: it earned — survives the code row being cleaned up.
+    code_id: Mapped[int | None] = mapped_column(
+        ForeignKey("invoice_codes.id", ondelete="SET NULL"), index=True, nullable=True
+    )
+
     user: Mapped["User"] = relationship(back_populates="transactions")  # noqa: F821
     business: Mapped["Business"] = relationship(back_populates="transactions")  # noqa: F821
+    code: Mapped["InvoiceCode | None"] = relationship()  # noqa: F821
 
     @property
     def is_pending(self) -> bool:
