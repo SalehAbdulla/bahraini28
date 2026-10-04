@@ -84,6 +84,17 @@ Seamlessly bridges physical retail interactions with digital accountability, ens
       `e2e/test_layout.py`, and the `REQUIRE_RECEIPT_REVIEW` rollout switch.
       `app/db/bootstrap.py::_ensure_review_columns` migrates existing databases
       and backfills legacy rows to `approved` (no rewards lost).
+- [x] **Tier 3** (merchant single-use codes): per-partner
+      `businesses.codes_required` opt-in, globally-unique `B28-XXXX-XXXX` codes
+      in a new `invoice_codes` table (`app/services/invoice_codes.py`), the
+      admin issue/list/stats/revoke API
+      (`POST|GET /api/v1/admin/businesses/{id}/codes`,
+      `GET .../codes/stats`, `DELETE /api/v1/admin/codes/{id}`) and page
+      (`/admin/businesses/{id}/codes`), `transactions.code_id`, and the
+      `issued → claimed → redeemed` lifecycle (released back to `issued` on
+      rejection). `app/db/bootstrap.py::_ensure_code_columns` migrates existing
+      databases. The `/admin/businesses/{id}/codes` page is covered by the
+      `e2e/test_layout.py` gutter guard.
 
 ---
 
