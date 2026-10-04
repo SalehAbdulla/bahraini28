@@ -211,3 +211,34 @@ class TransactionNotFoundError(AppError):
     status_code = 404
     code = "transaction_not_found"
     message = "Transaction not found."
+
+
+# --- Invoice codes (anti-fraud Tier 3) -----------------------------------------
+class InvoiceCodeRequiredError(AppError):
+    """A partner that prints single-use codes received a submission without one."""
+
+    status_code = 400
+    code = "invoice_code_required"
+    message = "This partner requires the single-use code printed on your receipt."
+
+
+class InvalidInvoiceCodeError(AppError):
+    """The quoted code does not exist, or belongs to a different partner."""
+
+    status_code = 400
+    code = "invalid_invoice_code"
+    message = "This receipt code is not valid for this partner."
+
+
+class InvoiceCodeUsedError(AppError):
+    """The code is already claimed by a submission or has been redeemed."""
+
+    status_code = 409
+    code = "invoice_code_used"
+    message = "This receipt code has already been used."
+
+
+class InvoiceCodeNotFoundError(AppError):
+    status_code = 404
+    code = "invoice_code_not_found"
+    message = "Receipt code not found."
