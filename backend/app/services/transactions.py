@@ -28,6 +28,13 @@ on or after the start of the current calendar day in the configured timezone),
 so they reset at midnight with no cron/background task. ``pending`` rows **do**
 consume a daily slot (queueing must not bypass the cap) while ``rejected`` rows
 do not (an honest mistake should not cost a volunteer their quota).
+
+Tier 3 adds *proof of authenticity* for partners who opt in:
+
+7. **Single-use receipt code** — a partner with ``codes_required`` only accepts
+   a submission that quotes an unused code an admin issued to that partner, so a
+   fabricated number never matches. The code is ``claimed`` on submission,
+   ``redeemed`` on approval, and released back to ``issued`` on rejection.
 """
 from __future__ import annotations
 
@@ -45,18 +52,21 @@ from app.core.errors import (
     BusinessNotFoundError,
     DailyLimitExceededError,
     DuplicateInvoiceError,
+    InvoiceCodeRequiredError,
     InvoiceFormatError,
     TotalDailyLimitExceededError,
     TransactionNotFoundError,
     TransactionNotPendingError,
 )
-from app.models import Admin, Business, RewardAdjustment, Transaction, User
+from app.models import Admin, Business, InvoiceCode, RewardAdjustment, Transaction, User
+from app.models.invoice_code import CODE_CLAIMED
 from app.models.transaction import (
     COUNTED_STATUSES,
     STATUS_APPROVED,
     STATUS_PENDING,
     STATUS_REJECTED,
 )
+from app.services import invoice_codes as code_service
 
 
 def start_of_calendar_day(tz_name: str | None = None, reference: datetime | None = None) -> datetime:
@@ -164,6 +174,7 @@ def submit_invoice(
     user: User,
     business_id: int,
     invoice_number: str,
+    code: str | None = None,
     receipt_path: str | None = None,
     receipt_sha256: str | None = None,
     requires_receipt: bool = True,
@@ -189,6 +200,13 @@ def submit_invoice(
     settings = settings or get_settings()
     business = get_usable_business(db, business_id)
     invoice = normalize_invoice_number(invoice_number)
+
+    # --- 0. Tier 3: a code-printing partner only accepts a code ---------------
+    # Checked before anything else so a code-partner's volunteer is told the
+    # real reason (a missing code, not a malformed invoice number).
+    raw_code = (code or "").strip()
+    if business.codes_required and not raw_code:
+        raise InvoiceCodeRequiredError
 
     # --- 1. format gate ------------------------------------------------------
     validate_invoice_format(business, invoice)
@@ -231,6 +249,15 @@ def submit_invoice(
 
     # --- create --------------------------------------------------------------
     review_required = requires_receipt
+
+    # Tier 3: reserve the code now that every other gate has passed. A failure
+    # above this point leaves the code untouched (nothing is committed on error).
+    claimed_code: InvoiceCode | None = None
+    if raw_code:
+        claimed_code = code_service.claim_for_submission(
+            db, business_id=business.id, raw_code=raw_code, user_id=user.id
+        )
+
     transaction = Transaction(
         user_id=user.id,
         business_id=business.id,
@@ -240,6 +267,7 @@ def submit_invoice(
         receipt_path=receipt_path,
         receipt_sha256=receipt_sha256,
         reviewed_at=None if review_required else datetime.now(timezone.utc),
+        code_id=claimed_code.id if claimed_code is not None else None,
     )
     db.add(transaction)
 
@@ -247,6 +275,9 @@ def submit_invoice(
         # Tier-1 fallback only: instant credit, exactly as before Tier 2.
         user.reward_points += transaction.reward_increment
         db.add(user)
+        # The submission is approved on the spot, so its code is spent at once.
+        if claimed_code is not None:
+            code_service.redeem(db, claimed_code)
 
     db.commit()
     db.refresh(transaction)
@@ -297,6 +328,12 @@ def approve_transaction(
             reason=f"invoice approval #{transaction.id}",
         )
     )
+    # Tier 3: the approved submission's code is now spent for good.
+    if transaction.code_id is not None:
+        code = db.get(InvoiceCode, transaction.code_id)
+        if code is not None and code.status == CODE_CLAIMED:
+            code_service.redeem(db, code)
+
     db.commit()
     db.refresh(transaction)
     return transaction
@@ -315,6 +352,13 @@ def reject_transaction(
     transaction.reviewed_by = admin.id
     transaction.reviewed_at = datetime.now(timezone.utc)
     transaction.rejection_reason = (reason or "").strip() or None
+
+    # Tier 3: hand the code back so an honest mistake (a bad photo) does not cost
+    # the volunteer the only code printed on their receipt.
+    if transaction.code_id is not None:
+        code = db.get(InvoiceCode, transaction.code_id)
+        if code is not None and code.status == CODE_CLAIMED:
+            code_service.release(db, code)
 
     db.add(transaction)
     db.commit()
