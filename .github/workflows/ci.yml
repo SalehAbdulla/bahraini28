@@ -38,7 +38,10 @@ jobs:
           --health-interval 10s --health-timeout 5s --health-retries 5
     env:
       # The same suite (see backend/tests/conftest.py) re-runs against a real
-      # PostgreSQL server — verifies TZDateTime timestamptz round-trips.
+      # PostgreSQL server — verifies TZDateTime timestamptz round-trips, and
+      # drives `reconcile_schema` down its PostgreSQL branch
+      # (tests/test_bootstrap_migration.py follows TEST_DATABASE_URL, so the
+      # DROP CONSTRAINT / TIMESTAMPTZ / `DEFAULT false` paths are covered too).
       TEST_DATABASE_URL: postgresql+psycopg://bahraini28:ci-pass@localhost:5432/bahraini28_test
     steps:
       - uses: actions/checkout@v4
