@@ -63,7 +63,7 @@ Monorepo with two independent components:
 
 ```bash
 ./run.sh            # API on :8000 + SPA on :5173
-./run.sh --seed     # ...plus demo businesses and a volunteer login
+./run.sh --seed     # ...plus demo businesses, a volunteer login and a code-required partner
 ./run.sh --areas    # ...plus the real Bahrain area list (idempotent)
 ./run.sh --help     # all flags: --backend-only, --frontend-only, --web-port
 ```
