@@ -209,3 +209,56 @@ def test_user_token_cannot_upload_logo(client, db):
         files={"file": ("logo.png", b"png", "image/png")},
     )
     assert res.status_code in (401, 403)
+
+
+def test_admin_can_set_and_clear_a_benefit_label(client, db):
+    """A benefit that is not a flat rate is carried by ``discount_label``.
+
+    The label is the one optional field an admin must be able to remove again
+    (blank the input), so an explicit null has to clear it — while a partial
+    update that never mentions the field must leave it alone.
+    """
+    category_id = make_business(db, cr="CR-LABEL").category_id
+    headers = _auth(client)
+
+    res = client.post(
+        "/api/v1/admin/businesses",
+        headers=headers,
+        json=_payload(
+            category_id,
+            cr="CR-LABEL-2",
+            name="Special Partner",
+            discount_percentage=0,
+            discount_label="  Special offer  ",  # surrounding space is trimmed
+        ),
+    )
+    assert res.status_code == 201, res.text
+    body = res.json()
+    assert body["discount_percentage"] == 0
+    assert body["discount_label"] == "Special offer"
+
+    kept = client.put(
+        f"/api/v1/admin/businesses/{body['id']}",
+        headers=headers,
+        json={"name": "Renamed"},
+    )
+    assert kept.status_code == 200, kept.text
+    assert kept.json()["discount_label"] == "Special offer"
+
+    cleared = client.put(
+        f"/api/v1/admin/businesses/{body['id']}",
+        headers=headers,
+        json={"discount_label": None},
+    )
+    assert cleared.status_code == 200, cleared.text
+    assert cleared.json()["discount_label"] is None
+
+
+def test_benefit_label_is_capped_at_the_column_width(client, db):
+    category_id = make_business(db, cr="CR-LABEL-LONG").category_id
+    res = client.post(
+        "/api/v1/admin/businesses",
+        headers=_auth(client),
+        json=_payload(category_id, cr="CR-LABEL-3", discount_label="x" * 41),
+    )
+    assert res.status_code == 422
