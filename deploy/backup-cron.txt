@@ -3,5 +3,16 @@
 # The server clock is UTC on OCI/Ubuntu, so 02:00 UTC == 05:00 Asia/Bahrain.
 # Keep the site alive (the backup job itself counts as activity, which also
 # protects the OCI Always Free ARM instance from idle reclamation).
+#
+# Install:
+#   sudo cp deploy/backup.sh         /usr/local/bin/bahraini28-backup
+#   sudo cp deploy/offsite-backup.sh /usr/local/bin/bahraini28-offsite-backup
+#   sudo chmod +x /usr/local/bin/bahraini28-backup /usr/local/bin/bahraini28-offsite-backup
+#   sudo install -m 600 deploy/offsite.env /opt/bahraini28/deploy/offsite.env
+# then paste the line below (`crontab -e` as root).
+#
+# The off-site copy is chained with `;`, not `&&`: whatever good artifacts exist
+# on disk should still reach off-site even when tonight's dump failed, and
+# `rclone copy` is a no-op for files that are already uploaded.
 
-0 2 * * * /usr/local/bin/bahraini28-backup >> /var/log/bahraini28-backup.log 2>&1
+0 2 * * * /usr/local/bin/bahraini28-backup >> /var/log/bahraini28-backup.log 2>&1 ; /usr/local/bin/bahraini28-offsite-backup >> /var/log/bahraini28-backup.log 2>&1
