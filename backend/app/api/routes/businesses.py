@@ -51,6 +51,7 @@ def list_businesses(
                 logo_url=b.logo_path,
                 category_name=b.category.name if b.category else None,
                 discount_percentage=b.discount_percentage,
+                discount_label=b.discount_label,
                 areas=area_names.get(b.id, []),
             )
             for b in items
@@ -91,6 +92,7 @@ def business_detail(business_id: int, db: DbSession):
         category_id=business.category_id,
         category_name=business.category.name if business.category else None,
         discount_percentage=business.discount_percentage,
+        discount_label=business.discount_label,
         description=business.description,
         codes_required=business.codes_required,
         is_active=business.is_active,
