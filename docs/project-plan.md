@@ -142,6 +142,36 @@ hard-coded, and administrators manage them from the control center:
 
 ---
 
+## Partner Onboarding (elite card seeds)
+
+The 28 pilot partners come from the volunteer-discount "elite card" sheet, and
+each partner's logo from the A3 poster deck (`PS A3.pdf`) that goes with it:
+
+- [x] Logos extracted for all 28 partners: every deck page rendered with
+  Ghostscript, cropped to the logo plate, trimmed of its page margin and capped
+  at 512 px. They live in `backend/scripts/assets/business_logos/<slug>.png`
+  rather than `backend/data/`, because `data/` is **not** copied into the backend
+  image while `scripts/` is — so the same command seeds the server.
+- [x] `backend/scripts/seed_partners.py` creates the partners idempotently
+  (matched on name, existing rows untouched), each with its category, discount
+  and the benefit text printed on the card, then copies the logo into
+  `UPLOAD_DIR` and links it via `Business.logo_path`
+  (`/uploads/partner-<slug>.png`). One upload mechanism: the admin's
+  logo-replace flow keeps working and never gets clobbered by a re-run.
+- [x] Deck order ≠ sheet order, so every logo was matched page → partner by its
+  artwork: pages 0-2 hold the sheet's rows 2, 3 and 1, and pages 21-24 hold rows
+  24, 25, 22 and 23. The mapping (page, slug, handle) is recorded inline in
+  `PARTNERS` for auditing.
+- [ ] Filled in from the admin UI once known, because the sheet has neither: the
+  commercial registration (rows start at `PENDING-<slug>`) and the branch/area
+  list (empty).
+- [ ] Nine partners grant a benefit that is not a flat percentage ("Special
+  offer", "سعر خاص", free weekly ice cream...). They are stored with
+  `discount_percentage = 0` and the benefit in `description`; the directory
+  badge renders that as `-0%`, so the SPA needs a "special offer" variant.
+
+---
+
 ## Brand Identity & Assets
 
 The look follows the organization's official deck (`docs/Bahraini 28 3.pdf`
