@@ -22,6 +22,11 @@ Tier 3 (single-use merchant receipt codes)
   (the code a submission spent). The ``invoice_codes`` table itself is *new*, so
   ``create_all`` builds it; only the two columns need reconciling here.
 
+Partner benefits
+* ``businesses.discount_label`` — the short headline shown instead of the
+  percentage for partners whose benefit is not a flat percentage ("Special
+  offer", free weekly ice cream, ...). Their ``discount_percentage`` stays 0.
+
 Every step is guarded by an inspector so it runs at most once and is a no-op on
 a fresh database. Failures are swallowed and logged: a reconciliation problem
 must never stop the app from booting.
@@ -37,6 +42,7 @@ logger = logging.getLogger(__name__)
 _INVOICE_COLUMN = "invoice_pattern"
 _OLD_CONSTRAINT = "uq_user_business_invoice"
 _NEW_CONSTRAINT = "uq_business_invoice"
+_DISCOUNT_LABEL_COLUMN = "discount_label"
 
 #: Tier 2 columns added to ``transactions``: ``(name, type)``. ``reviewed_at``
 #: is rendered with the dialect's timestamp type and ``reviewed_by`` gains its
@@ -236,6 +242,24 @@ def _ensure_code_columns(engine: Engine) -> None:
             )
 
 
+def _ensure_discount_label_column(engine: Engine) -> None:
+    """Add ``businesses.discount_label`` (short non-percentage benefit headline)."""
+    inspector = inspect(engine)
+    if "businesses" not in inspector.get_table_names():
+        return
+    columns = {c["name"] for c in inspector.get_columns("businesses")}
+    if _DISCOUNT_LABEL_COLUMN in columns:
+        return
+    with engine.begin() as conn:
+        conn.execute(
+            text(
+                f"ALTER TABLE businesses ADD COLUMN {_quote(_DISCOUNT_LABEL_COLUMN)} "
+                "VARCHAR(40)"
+            )
+        )
+    logger.info("bootstrap: added businesses.%s", _DISCOUNT_LABEL_COLUMN)
+
+
 def reconcile_schema(engine: Engine) -> None:
     """Apply additive schema changes (Tier 1 + Tier 2) to an existing database."""
     for step in (
@@ -243,6 +267,7 @@ def reconcile_schema(engine: Engine) -> None:
         _widen_invoice_uniqueness,
         _ensure_review_columns,
         _ensure_code_columns,
+        _ensure_discount_label_column,
     ):
         try:
             step(engine)
