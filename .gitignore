@@ -1,6 +1,8 @@
 # --- Environment & secrets -------------------------------------------------
 .env
 *.env.local
+# Off-site backup config: names a bucket and may point at an rclone config.
+deploy/offsite.env
 
 # --- Python -----------------------------------------------------------------
 __pycache__/
