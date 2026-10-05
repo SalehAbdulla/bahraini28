@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { api, apiUpload } from "../api/client";
 import Pagination from "../components/Pagination";
 import { fmtDateOnly } from "./BusinessDetail";
+import { benefitHeadline } from "../lib/benefit";
 import type { AdminBusinessOut, AreaOut, CategoryOut, Page } from "../types";
 
 interface BranchRow {
@@ -18,6 +19,7 @@ interface BizFormState {
   commercial_registration: string;
   category_id: number | "";
   discount_percentage: string;
+  discount_label: string;
   description: string;
   invoice_pattern: string;
   codes_required: boolean;
@@ -43,6 +45,7 @@ function newForm(): BizFormState {
     commercial_registration: "",
     category_id: "",
     discount_percentage: "0",
+    discount_label: "",
     description: "",
     invoice_pattern: "",
     codes_required: false,
@@ -108,6 +111,7 @@ export default function AdminBusinesses() {
       commercial_registration: b.commercial_registration,
       category_id: b.category_id,
       discount_percentage: String(b.discount_percentage),
+      discount_label: b.discount_label ?? "",
       description: b.description ?? "",
       invoice_pattern: b.invoice_pattern ?? "",
       codes_required: b.codes_required,
@@ -156,6 +160,7 @@ export default function AdminBusinesses() {
       commercial_registration: form.commercial_registration.trim(),
       category_id: Number(form.category_id),
       discount_percentage: discount,
+      discount_label: form.discount_label.trim() || null,
       description: form.description.trim() || null,
       invoice_pattern: form.invoice_pattern.trim() || null,
       codes_required: form.codes_required,
@@ -267,7 +272,7 @@ export default function AdminBusinesses() {
                     </div>
                   </td>
                   <td className="px-4 py-2">{b.category_name ?? "—"}</td>
-                  <td className="px-4 py-2 font-semibold text-brand-700">-{b.discount_percentage}%</td>
+                  <td className="px-4 py-2 font-semibold text-brand-700">{benefitHeadline(b) ?? "—"}</td>
                   <td className="px-4 py-2 text-slate-500">
                     {b.branches.length
                       ? b.branches
@@ -333,6 +338,24 @@ export default function AdminBusinesses() {
                 <div>
                   <label htmlFor="biz-discount" className="block text-sm font-medium text-slate-700">Discount %</label>
                   <input id="biz-discount" type="number" min={0} max={100} className="input-field" required value={form.discount_percentage} onChange={set("discount_percentage")} />
+                </div>
+                <div className="sm:col-span-2">
+                  <label htmlFor="biz-label" className="block text-sm font-medium text-slate-700">
+                    Benefit label (optional)
+                  </label>
+                  <input
+                    id="biz-label"
+                    className="input-field"
+                    maxLength={40}
+                    placeholder="e.g. Special offer"
+                    value={form.discount_label}
+                    onChange={set("discount_label")}
+                  />
+                  <p className="mt-1 text-xs text-slate-500">
+                    Shown in the directory and on the partner page in place of the percentage, for
+                    a deal that is not a flat rate (hospital services, a free item every week…).
+                    Leave blank to show the percentage; at 0% with no label no badge is shown.
+                  </p>
                 </div>
                 <div>
                   <label htmlFor="biz-expiry" className="block text-sm font-medium text-slate-700">Partnership expiry</label>
