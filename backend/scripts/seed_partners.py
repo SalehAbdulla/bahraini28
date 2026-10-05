@@ -16,8 +16,12 @@ Usage (from the backend/ directory):
 Idempotent in the same style as ``scripts/seed.py``: a partner is matched on its
 name, an existing row is left untouched (an edit made in the admin UI always
 wins), and a logo is attached only while the partner still has no
-``logo_path``. The logo PNGs live next to this script — ``backend/scripts`` is
-copied into the production image — so the same command works on the server:
+``logo_path``. The same "fill it in, never overwrite" rule applies to
+``discount_label``, so re-running after an upgrade backfills the partners whose
+benefit is not a percentage and leaves an admin's own wording alone.
+
+The logo PNGs live next to this script — ``backend/scripts`` is copied into the
+production image — so the same command works on the server:
 
     docker compose -f deploy/docker-compose.yml run --rm backend \
         python scripts/seed_partners.py
@@ -40,6 +44,7 @@ from sqlalchemy.orm import Session
 
 from app.core.config import get_settings
 from app.db.base import Base
+from app.db.bootstrap import reconcile_schema
 from app.db.session import SessionLocal, engine
 from app.models import Business, Category
 
@@ -73,7 +78,9 @@ class Partner:
     #: Category slug declared in ``CATEGORIES``.
     category: str
     #: Whole-number discount shown in the directory badge. ``0`` means the
-    #: benefit is not a flat percentage — ``offer`` spells out what it is.
+    #: benefit is not a flat percentage — ``offer`` spells out what it is and
+    #: ``label`` carries the short headline the directory prints instead of a
+    #: nonsensical "-0%".
     discount: int
     #: The volunteer benefit as advertised on the elite card (Arabic digits
     #: normalised to Western ones, which is what the badge and admin UI use).
@@ -82,6 +89,9 @@ class Partner:
     handle: str | None = None
     #: Poster-deck page the logo was taken from (0-based).
     page: int = 0
+    #: Short benefit headline for a partner whose deal is not a percentage
+    #: (max 40 chars, the column width). ``None`` = no badge.
+    label: str | None = None
 
 
 #: The 28 partners, in elite-card row order.
@@ -90,14 +100,23 @@ PARTNERS: list[Partner] = [
     Partner("orya-abaya", "عبايات أوريا", "retail", 15, "خصم 15%", "orya_abaya", 2),
     Partner("manso", "مانسو", "retail", 10, "خصم 10%", "manso.bh", 0),
     Partner("mudhafar-perfume", "مظفر للعطور", "health-beauty", 20, "خصم 20%", "mudhafar_perfume", 1),
-    Partner("alola-tailoring", "العلا", "services", 0, "Special offer", "alola.tailoring", 3),
+    Partner("alola-tailoring", "العلا", "services", 0, "Special offer", "alola.tailoring", 3, label="Special offer"),
     Partner("lahab", "لهب", "retail", 20, "خصم 20%", "lahab.bh", 4),
     # --- 6-10: skincare, supplements, jewellery, watches, hospital ---
     Partner("by-perla", "By Perla", "health-beauty", 20, "خصم 20%", "byperlacare.bh", 5),
     Partner("master-muscles", "ماستر مسلز", "sports-fitness", 15, "خصم 15%", "master_muscles", 6),
-    Partner("lamar-jewellery", "مجوهرات لمار", "retail", 0, "سعر خاص", "lamarjewellery_bh", 7),
+    Partner("lamar-jewellery", "مجوهرات لمار", "retail", 0, "سعر خاص", "lamarjewellery_bh", 7, label="سعر خاص"),
     Partner("b7watches", "B7watches", "retail", 25, "خصم 25%", "b7watches", 8),
-    Partner("alhilal-premier", "مستشفى الهلال", "health-beauty", 0, "خدمات مختارة", "alhilalpremierhospital", 9),
+    Partner(
+        "alhilal-premier",
+        "مستشفى الهلال",
+        "health-beauty",
+        0,
+        "خدمات مختارة",
+        "alhilalpremierhospital",
+        9,
+        label="خدمات مختارة",
+    ),
     # --- 11-16: flowers, bookstore, car accessories, sweets, coffee, dessert ---
     Partner("julian-flowers", "جوليان فلورز", "retail", 10, "خصم 10%", "julian.flowers.bh", 10),
     Partner("dar-shaghaf", "مكتبة شغف", "education", 15, "خصم 15%", "darshghf_bh", 11),
@@ -123,7 +142,7 @@ PARTNERS: list[Partner] = [
     Partner("brew-rista", "Brew Rista", "restaurants", 20, "خصم 20% للفردي / 28% للدائم + الورش", "brewrista.bh", 14),
     Partner("nice-mood", "Nice Mood", "restaurants", 30, "خصم يصل إلى 30%", "nice.mood.bh", 15),
     # --- 17-21: wellness, herbal, eyewear, laundry, beauty ---
-    Partner("vitalia", "فيتاليا", "health-beauty", 0, "أسعار خاصة", page=16),
+    Partner("vitalia", "فيتاليا", "health-beauty", 0, "أسعار خاصة", page=16, label="أسعار خاصة"),
     Partner("spirit-of-nature", "أعشاب روح الطبيعة", "health-beauty", 20, "خصم 20% / أسعار خاصة", "spirit_of_nature91", 17),
     Partner(
         "ammar-optics",
@@ -138,12 +157,12 @@ PARTNERS: list[Partner] = [
     Partner("bravo-laundry", "مغسلة برافوا", "services", 20, "خصم 20% على الفاتورة / جميع الفروع", "bravo.laundry_", 19),
     Partner("beautiqo", "بيوتيكو", "health-beauty", 15, "خصم 15% على الفاتورة", "beautiqobh", 20),
     # --- 22-28: ice cream, shoes, garden, fashion, gym, cafe, flowers ---
-    Partner("frozo", "Frozo", "restaurants", 0, "آيس كريم مجاني بعدد يتفق عليه كل أسبوع", "frozo_bh", 23),
-    Partner("catchy-step", "أحذية الخطوة الملفتة", "retail", 0, "نسبة ربح مقابل كل عملية بيع حذاء", "catchy__step", 24),
+    Partner("frozo", "Frozo", "restaurants", 0, "آيس كريم مجاني بعدد يتفق عليه كل أسبوع", "frozo_bh", 23, label="آيس كريم مجاني"),
+    Partner("catchy-step", "أحذية الخطوة الملفتة", "retail", 0, "نسبة ربح مقابل كل عملية بيع حذاء", "catchy__step", 24, label="نسبة ربح لكل عملية بيع"),
     Partner("yasmin-garden", "حدائق ياسمين", "services", 10, "خصم 10% لحاملي البطاقة / 6 مرات دخول مجاني في السنة", "yasmingarden86", 21),
-    Partner("ali-moda", "علي مودا", "retail", 0, "أسعار خاصة", "ali_moda20", 22),
-    Partner("the-gym", "الجيم", "sports-fitness", 0, "10 days extra on the month", page=25),
-    Partner("unocafe", "Uno Cafe", "restaurants", 0, "Special offer", "unocafebh", 26),
+    Partner("ali-moda", "علي مودا", "retail", 0, "أسعار خاصة", "ali_moda20", 22, label="أسعار خاصة"),
+    Partner("the-gym", "الجيم", "sports-fitness", 0, "10 days extra on the month", page=25, label="10 days extra"),
+    Partner("unocafe", "Uno Cafe", "restaurants", 0, "Special offer", "unocafebh", 26, label="Special offer"),
     Partner("enaaq-flowers", "عناق للورد", "retail", 20, "خصم 20%", "enaaq.flowers", 27),
 ]
 
@@ -183,6 +202,11 @@ def _attach_logo(business: Business, partner: Partner, upload_dir: Path) -> bool
 def seed() -> None:
     settings = get_settings()
     Base.metadata.create_all(bind=engine)
+    # ``create_all`` builds a missing *table* but never alters an existing one,
+    # so a database created before ``businesses.discount_label`` existed needs
+    # the additive migration first — the app applies it on boot, but this script
+    # runs before the server does under ``run.sh --partners``.
+    reconcile_schema(engine)
 
     upload_dir = Path(settings.UPLOAD_DIR)
     upload_dir.mkdir(parents=True, exist_ok=True)
@@ -190,6 +214,7 @@ def seed() -> None:
     created: list[Partner] = []
     already_present: list[str] = []
     logos_written = 0
+    labels_filled = 0
     missing_logos: list[str] = []
 
     with SessionLocal() as db:
@@ -204,6 +229,7 @@ def seed() -> None:
                     commercial_registration=f"PENDING-{partner.slug}",
                     category_id=cats[partner.category].id,
                     discount_percentage=partner.discount,
+                    discount_label=partner.label,
                     description=partner.offer,
                     is_active=True,
                     expiry_date=_tznow(365),
@@ -213,6 +239,12 @@ def seed() -> None:
                 created.append(partner)
             else:
                 already_present.append(partner.name)
+                # ``discount_label`` joined the model after the first pilot
+                # import: fill a row that still has no label (one typed in the
+                # admin UI is left alone, exactly like an uploaded logo).
+                if partner.label and business.discount_label is None:
+                    business.discount_label = partner.label
+                    labels_filled += 1
 
             # A logo already on file belongs to an admin edit — leave it alone.
             if business.logo_path:
@@ -224,19 +256,23 @@ def seed() -> None:
         db.commit()
         # Materialised while the session is still open, so the summary printed
         # below only ever reads plain tuples and not ORM attributes.
-        created_summary = [(p.name, p.discount, p.category, p.handle) for p in created]
+        created_summary = [
+            (p.name, p.discount, p.label, p.category, p.handle) for p in created
+        ]
 
     print(
         f"Partners: {len(created_summary)} created, {len(already_present)} already "
         f"present ({len(PARTNERS)} on the elite card)."
     )
     print(f"Logos   : {logos_written} written to {upload_dir}")
+    if labels_filled:
+        print(f"Labels  : {labels_filled} non-percentage benefit(s) filled in")
     if missing_logos:
         print(f"          missing PNG(s): {', '.join(missing_logos)}")
     if created_summary:
         print("New partners (benefit / category / handle):")
-        for name, discount, category, handle in created_summary:
-            benefit = f"-{discount}%" if discount else "special offer"
+        for name, discount, label, category, handle in created_summary:
+            benefit = f"-{discount}%" if discount else (label or "special offer")
             print(f"  {name}  ·  {benefit}  ·  {category}  ·  @{handle or '—'}")
     print("Still to fill in from the admin UI:")
     print("  - commercial registration (every row starts as PENDING-<slug>)")
