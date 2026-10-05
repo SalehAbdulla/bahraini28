@@ -159,9 +159,10 @@ so the dev proxy and the production reverse proxy need no extra config.
   **receipt review queue (`/admin/reviews`: receipt thumbnail, approve/reject
   with an optional reason)**, user management
   (CRUD / expiry override / reward adjustment / password reset / activate /
-  deactivate), **business management (register / edit / logo upload /
-  activate-deactivate partnerships with categories and multi-area
-  branches)**, **single-use receipt-code batches (`/admin/businesses/{id}/codes`:
+  deactivate), **business management (register / edit / logo upload / a benefit
+  label for a deal that is not a flat percentage / activate-deactivate
+  partnerships with categories and multi-area branches)**,
+  **single-use receipt-code batches (`/admin/businesses/{id}/codes`:
   mint / filter / revoke)**, **areas & categories management**, and master
   transaction ledger.
 
