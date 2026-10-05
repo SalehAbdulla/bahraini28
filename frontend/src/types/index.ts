@@ -39,6 +39,9 @@ export interface BusinessDetail {
   category_id: number;
   category_name: string;
   discount_percentage: number;
+  /** Short headline replacing the percentage when the benefit is not a flat
+   *  percentage (e.g. "Special offer"). */
+  discount_label: string | null;
   description: string | null;
   invoice_pattern: string | null;
   /** True when this partner prints single-use codes (anti-fraud Tier 3). */
@@ -54,6 +57,7 @@ export interface BusinessSummary {
   logo_url: string | null;
   category_name: string | null;
   discount_percentage: number;
+  discount_label: string | null;
   areas: string[];
 }
 
@@ -82,6 +86,7 @@ export interface AdminBusinessOut {
   category_id: number;
   category_name: string | null;
   discount_percentage: number;
+  discount_label: string | null;
   description: string | null;
   invoice_pattern: string | null;
   codes_required: boolean;
