@@ -1,7 +1,9 @@
 import { Link } from "react-router-dom";
 import type { BusinessSummary } from "../types";
+import { benefitHeadline } from "../lib/benefit";
 
 export default function BusinessCard({ business }: { business: BusinessSummary }) {
+  const benefit = benefitHeadline(business);
   return (
     <Link
       to={`/businesses/${business.id}`}
@@ -19,9 +21,11 @@ export default function BusinessCard({ business }: { business: BusinessSummary }
             {business.name.charAt(0)}
           </span>
         )}
-        <span className="border border-brand-200 bg-brand-50 px-2.5 py-1 text-xs font-semibold text-brand-700">
-          -{business.discount_percentage}%
-        </span>
+        {benefit && (
+          <span className="border border-brand-200 bg-brand-50 px-2.5 py-1 text-xs font-semibold text-brand-700">
+            {benefit}
+          </span>
+        )}
       </div>
 
       <span className="mt-5 text-[11px] font-semibold uppercase tracking-[0.14em] text-ink-800/50">
