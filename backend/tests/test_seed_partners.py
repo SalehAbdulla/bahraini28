@@ -63,6 +63,21 @@ def test_every_row_fits_the_business_columns():
         assert partner.offer.strip(), partner.slug  # becomes `description`
         assert len(partner.name) <= 160, partner.slug  # businesses.name
         assert len(f"PENDING-{partner.slug}") <= 60, partner.slug  # businesses.cr
+        # businesses.discount_label is VARCHAR(40) and shown verbatim.
+        assert len(partner.label or "") <= 40, partner.slug
+        assert partner.label is None or partner.label.strip() == partner.label, partner.slug
+
+
+def test_non_percentage_partners_carry_a_label():
+    """A 0% partner needs a label.
+
+    Its benefit cannot be expressed as a number, and without a label the
+    directory would print "-0%" — which is exactly what this field exists to
+    prevent.
+    """
+    for partner in seed_partners.PARTNERS:
+        if partner.discount == 0:
+            assert partner.label, partner.slug
 
 
 def test_logo_files_match_the_table():
@@ -93,6 +108,7 @@ def test_seed_creates_each_partner_with_its_logo(seeded):
             business = businesses[partner.name]
             assert business.logo_path == f"/uploads/partner-{partner.slug}.png"
             assert business.discount_percentage == partner.discount
+            assert business.discount_label == partner.label
             assert business.description == partner.offer
             assert business.commercial_registration == f"PENDING-{partner.slug}"
             assert categories[business.category_id] == partner.category
@@ -105,6 +121,35 @@ def test_seed_creates_each_partner_with_its_logo(seeded):
         copied = upload_dir / f"partner-{partner.slug}.png"
         original = seed_partners.LOGO_DIR / f"{partner.slug}.png"
         assert copied.read_bytes() == original.read_bytes(), partner.slug
+
+
+def test_reseeding_fills_a_missing_label_but_keeps_an_admin_one(seeded):
+    """``discount_label`` arrived after the first import: a re-run backfills it.
+
+    A label typed in the admin UI is an edit like any other, so it must survive.
+    """
+    session_local, _upload_dir = seeded
+    partner = next(p for p in seed_partners.PARTNERS if p.label)
+
+    def stored() -> str | None:
+        with session_local() as db:
+            row = db.scalar(select(Business).where(Business.name == partner.name))
+            return row.discount_label
+
+    def store(value: str | None) -> None:
+        with session_local() as db:
+            row = db.scalar(select(Business).where(Business.name == partner.name))
+            row.discount_label = value
+            db.commit()
+
+    seed_partners.seed()
+    store(None)  # the state an earlier pilot import left behind
+    seed_partners.seed()
+    assert stored() == partner.label
+
+    store("Admin wording")
+    seed_partners.seed()
+    assert stored() == "Admin wording"
 
 
 def test_reseeding_creates_nothing_and_keeps_an_admin_logo(seeded, capsys):
