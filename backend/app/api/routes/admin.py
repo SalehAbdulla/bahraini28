@@ -390,6 +390,7 @@ def _admin_business_out(b: Business) -> AdminBusinessOut:
         category_id=b.category_id,
         category_name=b.category.name if b.category else None,
         discount_percentage=b.discount_percentage,
+        discount_label=b.discount_label,
         description=b.description,
         invoice_pattern=b.invoice_pattern,
         codes_required=b.codes_required,
@@ -451,6 +452,7 @@ def create_business(
         branches=payload.branches,
         invoice_pattern=payload.invoice_pattern,
         codes_required=payload.codes_required,
+        discount_label=payload.discount_label,
     )
     return _admin_business_out(business_service.get_business_full(db, business.id))
 
