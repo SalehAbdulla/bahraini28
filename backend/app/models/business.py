@@ -24,6 +24,9 @@ class Business(Base):
     # Logo stored as a static file path (optional).
     logo_path: Mapped[str | None] = mapped_column(String(255), nullable=True)
     discount_percentage: Mapped[int] = mapped_column(Integer, nullable=False)
+    # Optional short headline replacing the percentage in the directory (e.g.
+    # "Special offer"), for partners whose benefit is not a flat percentage.
+    discount_label: Mapped[str | None] = mapped_column(String(40), nullable=True)
     description: Mapped[str | None] = mapped_column(Text, nullable=True)
     # Optional per-partner validation regex (full match) applied to submitted
     # invoice numbers. Falls back to INVOICE_DEFAULT_PATTERN when NULL.
