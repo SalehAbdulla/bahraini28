@@ -142,7 +142,7 @@ def make_user(db, *, cpr="100000000001", email="user@example.com", password="use
 
 def make_business(db, *, name="Test Business", cr=None, discount=20,
                   category=None, area=None, is_active=True, expiry_days=365,
-                  codes_required=False) -> Business:
+                  codes_required=False, discount_label=None) -> Business:
     # Default to a unique CR so additional businesses in one test never collide
     # with the unique commercial-registration constraint.
     if cr is None:
@@ -158,6 +158,7 @@ def make_business(db, *, name="Test Business", cr=None, discount=20,
         commercial_registration=cr,
         category_id=category.id,
         discount_percentage=discount,
+        discount_label=discount_label,
         is_active=is_active,
         expiry_date=datetime.now(timezone.utc) + timedelta(days=expiry_days),
         # Tier 3 opt-in: the partner prints single-use codes on its receipts.
