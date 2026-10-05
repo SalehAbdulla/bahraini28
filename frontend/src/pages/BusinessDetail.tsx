@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, type FormEvent } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { api, apiUpload, RequestError } from "../api/client";
 import { useAuth } from "../auth/AuthContext";
+import { benefitHeadline } from "../lib/benefit";
 import type {
   BusinessDetail as BusinessDetailType,
   Page,
@@ -99,6 +100,8 @@ export default function BusinessDetail() {
     return <p className="text-ink-800/50 py-16 text-center">Loading…</p>;
   }
 
+  const benefit = benefitHeadline(business);
+
   return (
     <div className="max-w-4xl">
       <div className="bg-white border border-ink-900/10 rounded-2xl p-6">
@@ -123,9 +126,11 @@ export default function BusinessDetail() {
               </p>
             </div>
           </div>
-          <span className="inline-block text-sm font-semibold px-3 py-1 bg-brand-100 text-brand-700">
-            -{business.discount_percentage}% discount
-          </span>
+          {benefit && (
+            <span className="inline-block text-sm font-semibold px-3 py-1 bg-brand-100 text-brand-700">
+              {business.discount_label ? benefit : `${benefit} discount`}
+            </span>
+          )}
         </div>
         <p className="mt-4 text-ink-800/70">
           {business.description ?? "No description provided."}
