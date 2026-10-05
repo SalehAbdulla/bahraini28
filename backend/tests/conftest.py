@@ -1,7 +1,14 @@
-"""Shared fixtures: an app wired to an in-memory SQLite database.
+"""Shared fixtures: an app wired to a database.
 
-Each test gets a fresh in-memory engine (``StaticPool`` shares one connection
-so all sessions see the same data), with tables created automatically.
+By default each test gets a fresh in-memory engine (``StaticPool`` shares one
+connection so all sessions see the same data), with tables created
+automatically, so no committed state can leak between tests.
+
+Set ``TEST_DATABASE_URL`` to re-run the same suite against a *persistent*
+database (a file locally, PostgreSQL in CI). That database is shared by the
+whole session, so the ``app`` fixture resets the schema before every test —
+see ``reset_schema`` — to give the persistent run the same clean slate the
+in-memory run gets for free.
 """
 from __future__ import annotations
 
@@ -62,10 +69,39 @@ def make_test_settings(*, require_receipt_review: bool = False) -> Settings:
     )
 
 
+def _is_in_memory(database_url: str) -> bool:
+    """True for the default per-test in-memory SQLite engine.
+
+    ``sqlite://`` (no path) and any ``:memory:`` DSN live only as long as the
+    connection that created them, so each ``app`` fixture already starts empty.
+    """
+    return database_url == "sqlite://" or ":memory:" in database_url
+
+
+def reset_schema(application) -> None:
+    """Empty a shared, on-disk test database before the app starts.
+
+    The default in-memory engine is rebuilt for every test, so the suite has
+    always relied on each test seeing an empty database. When
+    ``TEST_DATABASE_URL`` points at a *persistent* database (a file locally,
+    PostgreSQL in CI) that database is instead shared by the whole session and
+    any committed state — a rotated admin password, a seeded business — leaks
+    into the next test. Drop the schema so the startup hook recreates the tables
+    and re-seeds the bootstrap admin, giving the persistent run the same clean
+    slate the in-memory run assumes.
+    """
+    if _is_in_memory(application.state.settings.DATABASE_URL):
+        return
+    Base.metadata.drop_all(bind=application.state.engine)
+
+
 @pytest.fixture
 def app():
     settings = make_test_settings()
     application = create_app(settings)
+    # A persistent TEST_DATABASE_URL is shared across the session; reset it so
+    # startup recreates the tables and re-seeds the bootstrap admin.
+    reset_schema(application)
     yield application
     # Dispose the engine so pooled connections are returned on Postgres;
     # otherwise every test leaks its engine pool and CI servers with a
@@ -98,6 +134,7 @@ def db(app):
 def review_app():
     settings = make_test_settings(require_receipt_review=True)
     application = create_app(settings)
+    reset_schema(application)
     yield application
     application.state.engine.dispose()
 
