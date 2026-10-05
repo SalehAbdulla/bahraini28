@@ -4,6 +4,7 @@
 #
 #   ./run.sh                  API on :8000 + SPA on :5173, both watched
 #   ./run.sh --seed           ...plus demo businesses + a volunteer login
+#   ./run.sh --partners       ...plus the 28 elite-card partners + their logos
 #   ./run.sh --areas          ...plus the real Bahrain area list (idempotent)
 #   ./run.sh --backend-only   just the API, logs live in this terminal
 #   ./run.sh --frontend-only  just the SPA dev server (API expected elsewhere)
@@ -35,6 +36,7 @@ PROXY_TARGET_PORT=8000
 RUN_BACKEND=1
 RUN_WEB=1
 SEED=0
+SEED_PARTNERS=0
 SEED_AREAS=0
 
 PY=""
@@ -73,6 +75,9 @@ Usage: ./run.sh [options]
                       :8000 outside this script).
   --seed              Run backend/scripts/seed.py first (demo businesses and a
                       volunteer account: volunteer@example.com / volunteer123).
+  --partners          Run backend/scripts/seed_partners.py first (the 28
+                      elite-card partner businesses, their logos and volunteer
+                      discounts; idempotent).
   --areas             Run backend/scripts/seed_areas.py first (imports the
                       real Bahrain area list; idempotent).
   --no-install        Never install anything; fail if deps are missing.
@@ -311,6 +316,7 @@ run_backend_scripts() {
 while [ $# -gt 0 ]; do
   case "$1" in
     --seed)          SEED=1 ;;
+    --partners)      SEED_PARTNERS=1 ;;
     --areas)         SEED_AREAS=1 ;;
     --backend-only)  RUN_WEB=0 ;;
     --frontend-only) RUN_BACKEND=0 ;;
@@ -329,8 +335,8 @@ done
 if [ "$RUN_BACKEND" = 0 ] && [ "$RUN_WEB" = 0 ]; then
   die "nothing to run (--backend-only and --frontend-only cancel out)"
 fi
-if [ "$RUN_BACKEND" = 0 ] && { [ "$SEED" = 1 ] || [ "$SEED_AREAS" = 1 ]; }; then
-  die "--seed/--areas write to the database, so they need the API side (drop --frontend-only)"
+if [ "$RUN_BACKEND" = 0 ] && { [ "$SEED" = 1 ] || [ "$SEED_PARTNERS" = 1 ] || [ "$SEED_AREAS" = 1 ]; }; then
+  die "--seed/--partners/--areas write to the database, so they need the API side (drop --frontend-only)"
 fi
 if [ "$RUN_BACKEND" = 1 ] && [ "$RUN_WEB" = 1 ] && [ "$API_PORT" != "$PROXY_TARGET_PORT" ]; then
   warn "API_PORT=$API_PORT, but vite.config.ts proxies /api and /uploads to :$PROXY_TARGET_PORT"
@@ -356,12 +362,17 @@ if [ "$RUN_WEB" = 1 ]; then
     "free port $WEB_PORT first (hint: WEB_PORT=5174 ./run.sh)"
 fi
 
-# seed.py lays down demo categories/areas/businesses, then seed_areas.py adds
-# the full official area list on top (idempotent, never touches existing rows).
+# seed.py lays down demo categories/areas/businesses, seed_partners.py adds the
+# 28 real elite-card partners (logos included), then seed_areas.py adds the full
+# official area list on top (idempotent, never touches existing rows).
 # Order matches README.md.
 if [ "$SEED" = 1 ]; then
   step "Seeding demo data (categories, areas, businesses, volunteer login)"
   run_backend_scripts seed.py
+fi
+if [ "$SEED_PARTNERS" = 1 ]; then
+  step "Seeding the 28 elite-card partners (logos + volunteer discounts)"
+  run_backend_scripts seed_partners.py
 fi
 if [ "$SEED_AREAS" = 1 ]; then
   step "Importing the real Bahrain area list (idempotent)"
