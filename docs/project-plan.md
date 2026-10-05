@@ -240,8 +240,10 @@ or any Docker host. Full artifacts in `deploy/`, run guide in `README.md`:
   FastAPI backend (uploads volume, single uvicorn worker for the in-process
   SSE bus), one-shot frontend builder, **Caddy** (auto-renewing TLS, serves
   SPA, proxies `/api`, `/uploads`, `/health`).
-- `deploy/deploy.sh` — one-command deploy + smoke path; `backup.sh` /
-  `restore.sh` — daily `pg_dump` + uploads archive with 14-day retention.
+- `deploy/deploy.sh` — one-command deploy + smoke path; `backup.sh` +
+  `offsite-backup.sh` (rclone → object storage, config `deploy/offsite.env`) /
+  `restore.sh` (restores the dump **and** the uploads archive) — daily `pg_dump`
+  + uploads archive with 14-day local retention.
 - `deploy/.env.production.example` — production env template (DB credentials,
   secret keys, CORS for https://bahraini28.com). `backend/.env.example` — local.
 - CI (`.github/workflows/ci.yml`) runs the backend suite on SQLite **and**
