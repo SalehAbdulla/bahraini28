@@ -57,6 +57,28 @@ def test_business_detail(client, db):
     assert body["areas"][0]["area_name"] == "Manama"
 
 
+def test_public_payloads_carry_the_benefit_label(client, db):
+    """A partner whose benefit is not a percentage carries it as a label, so the
+    directory can print that instead of a nonsensical "-0%"."""
+    bz = make_business(
+        db, name="Hospital", cr="CR-LABEL", discount=0, discount_label="خدمات مختارة"
+    )
+
+    summary = client.get("/api/v1/businesses").json()["items"][0]
+    assert summary["discount_percentage"] == 0
+    assert summary["discount_label"] == "خدمات مختارة"
+
+    detail = client.get(f"/api/v1/businesses/{bz.id}").json()
+    assert detail["discount_label"] == "خدمات مختارة"
+
+
+def test_percentage_only_partner_has_no_label(client, db):
+    bz = make_business(db, name="Cafe", cr="CR-PLAIN", discount=20)
+
+    assert client.get("/api/v1/businesses").json()["items"][0]["discount_label"] is None
+    assert client.get(f"/api/v1/businesses/{bz.id}").json()["discount_label"] is None
+
+
 def test_business_detail_not_found(client, db):
     res = client.get("/api/v1/businesses/999999")
     assert res.status_code == 404
