@@ -25,6 +25,9 @@ class BusinessDetail(ORMModel):
     category_id: int
     category_name: str
     discount_percentage: int
+    #: Short headline shown instead of the percentage when the benefit is not a
+    #: flat percentage (e.g. "Special offer"); ``None`` means show the number.
+    discount_label: str | None = None
     description: str | None = None
     invoice_pattern: str | None = None
     #: True when this partner prints single-use codes, so the submission form
@@ -41,6 +44,9 @@ class BusinessSummary(ORMModel):
     logo_url: str | None = None
     category_name: str
     discount_percentage: int
+    #: Set when the partner's benefit is not a flat percentage — the card then
+    #: prints this instead of a "-0%" badge.
+    discount_label: str | None = None
     areas: list[str] = []
 
 
@@ -118,6 +124,8 @@ class AdminBusinessCreate(BaseModel):
     commercial_registration: str = Field(min_length=3, max_length=60)
     category_id: int = Field(gt=0)
     discount_percentage: int = Field(ge=0, le=100)
+    #: Optional headline for a benefit that is not a flat percentage.
+    discount_label: str | None = Field(None, max_length=40)
     description: str | None = Field(None, max_length=2000)
     invoice_pattern: str | None = Field(None, max_length=160)
     expiry_date: datetime
@@ -136,6 +144,8 @@ class AdminBusinessUpdate(BaseModel):
     commercial_registration: str | None = Field(None, min_length=3, max_length=60)
     category_id: int | None = Field(None, gt=0)
     discount_percentage: int | None = Field(None, ge=0, le=100)
+    #: Send an explicit ``null`` (or "") to clear the label.
+    discount_label: str | None = Field(None, max_length=40)
     description: str | None = None
     invoice_pattern: str | None = Field(None, max_length=160)
     expiry_date: datetime | None = None
@@ -152,6 +162,7 @@ class AdminBusinessOut(ORMModel):
     category_id: int
     category_name: str | None = None
     discount_percentage: int
+    discount_label: str | None = None
     description: str | None = None
     invoice_pattern: str | None = None
     codes_required: bool = False
