@@ -46,6 +46,10 @@ Thumbs.db
 /docs/Fonts.zip
 /docs/Bahraini 28 3.pdf
 /Brand/
+# The elite-card sheet and the A3 poster deck the partner seed and its logos
+# were extracted from (a 16 MB print-ready PDF): provenance, not something the
+# app serves, and the script says so.
+/data/
 
 # --- Playwright / E2E ----------------------------------------------------------
 e2e/test-results/
