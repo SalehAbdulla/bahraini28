@@ -155,6 +155,7 @@ def create_business(
     branches: list | None = None,
     invoice_pattern: str | None = None,
     codes_required: bool = False,
+    discount_label: str | None = None,
 ) -> Business:
     """Register a new merchant partnership."""
     if db.scalar(
@@ -173,6 +174,7 @@ def create_business(
         description=description,
         invoice_pattern=invoice_pattern,
         codes_required=codes_required,
+        discount_label=(discount_label or "").strip() or None,
         expiry_date=expiry_date,
         is_active=is_active,
     )
@@ -204,6 +206,13 @@ def update_business(db: Session, business: Business, changes: dict) -> Business:
     branches = changes.get("branches")
     if branches is not None:
         _validate_areas(db, branches)
+
+    # ``discount_label`` is the one optional field an admin must be able to
+    # *clear*: an explicit null/blank removes it, so it is handled here rather
+    # than in the generic loop below (which skips nulls to keep a partial update
+    # from wiping fields the caller never mentioned).
+    if "discount_label" in changes:
+        business.discount_label = (changes["discount_label"] or "").strip() or None
 
     for field in (
         "name",
