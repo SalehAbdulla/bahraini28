@@ -10,6 +10,7 @@ asserts the migration:
 * adds the Tier 2 review columns and backfills existing rows to ``approved`` so
   no historical reward is lost;
 * adds the Tier 3 ``businesses.codes_required`` / ``transactions.code_id`` columns;
+* adds ``businesses.discount_label`` (the headline for a non-percentage benefit);
 * is idempotent (safe to run on every boot).
 
 The legacy schema is emitted in the dialect of the engine under test, and that
@@ -338,6 +339,19 @@ def test_reconcile_code_columns_is_idempotent(legacy_engine):
     assert "code_id" in {
         c["name"] for c in inspect(legacy_engine).get_columns("transactions")
     }
+
+
+def test_reconcile_adds_the_discount_label_column(legacy_engine):
+    """A partner whose benefit is not a percentage is described by a label.
+
+    Nullable on purpose: every pre-existing partner keeps "no label" and simply
+    goes on showing its percentage.
+    """
+    reconcile_schema(legacy_engine)
+    reconcile_schema(legacy_engine)  # second boot must not raise
+
+    columns = {c["name"]: c for c in inspect(legacy_engine).get_columns("businesses")}
+    assert columns["discount_label"]["nullable"] is True
 
 
 # --- PostgreSQL-specific branches ----------------------------------------------
