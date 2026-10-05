@@ -165,10 +165,14 @@ each partner's logo from the A3 poster deck (`PS A3.pdf`) that goes with it:
 - [ ] Filled in from the admin UI once known, because the sheet has neither: the
   commercial registration (rows start at `PENDING-<slug>`) and the branch/area
   list (empty).
-- [ ] Nine partners grant a benefit that is not a flat percentage ("Special
-  offer", "سعر خاص", free weekly ice cream...). They are stored with
-  `discount_percentage = 0` and the benefit in `description`; the directory
-  badge renders that as `-0%`, so the SPA needs a "special offer" variant.
+- [x] Benefits that are not a flat percentage are carried by a new optional
+  `businesses.discount_label` (≤40 chars) instead of a `-0%` badge: those nine
+  partners seed a short headline taken from their card ("Special offer",
+  "سعر خاص", "10 days extra"…), the directory card and the partner page print it
+  in place of the percentage, and the admin form gained a "Benefit label" field
+  that can be cleared again. `backend/app/db/bootstrap.py` adds the column to an
+  existing database on boot (the seed reconciles it too, because it runs first),
+  and a re-run backfills the label without touching wording an admin typed.
 
 ---
 
