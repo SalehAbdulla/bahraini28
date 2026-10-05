@@ -64,6 +64,7 @@ Monorepo with two independent components:
 ```bash
 ./run.sh            # API on :8000 + SPA on :5173
 ./run.sh --seed     # ...plus demo businesses, a volunteer login and a code-required partner
+./run.sh --partners # ...plus the 28 elite-card partners, their logos and discounts
 ./run.sh --areas    # ...plus the real Bahrain area list (idempotent)
 ./run.sh --help     # all flags: --backend-only, --frontend-only, --web-port
 ```
@@ -105,6 +106,9 @@ PYTHONPATH=. python scripts/seed.py
 
 # import the real Bahrain area list (optional, idempotent)
 PYTHONPATH=. python scripts/seed_areas.py
+
+# seed the 28 elite-card partners, logos included (optional, idempotent)
+PYTHONPATH=. python scripts/seed_partners.py
 ```
 
 Default bootstrapped admin (change in production via `.env`):
@@ -190,10 +194,15 @@ docker compose -f deploy/docker-compose.yml run --rm backend \
     python scripts/set_admin_password.py --username admin
 ```
 
-Optional demo data:
+Optional seed data:
 
 ```bash
+# demo businesses, a volunteer login and a code-required partner
 docker compose -f deploy/docker-compose.yml run --rm backend python scripts/seed.py
+
+# the 28 elite-card partners with their logos (idempotent; re-running never
+# touches a row an admin has edited)
+docker compose -f deploy/docker-compose.yml run --rm backend python scripts/seed_partners.py
 ```
 
 Operational notes:
