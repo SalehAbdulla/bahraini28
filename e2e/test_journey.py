@@ -165,6 +165,25 @@ def test_admin_registers_business(browser, app_url: str) -> None:
     expect(page.get_by_text(f"CR-E2E-{stamp}")).to_be_visible()
     # ... with its uploaded logo rendered.
     expect(page.locator(f"tr:has-text('E2E Store {stamp}') img")).to_be_visible()
+
+    # --- a benefit that is not a percentage shows as its label ---------------
+    # Such a partner is stored with 0%, so it must never render a "-0%" badge —
+    # neither in the management table nor on the public card.
+    row = page.locator(f"tr:has-text('E2E Store {stamp}')")
+    expect(row).to_contain_text("-12%")
+    row.get_by_role("button", name="Edit").click()
+    page.get_by_label("Discount %").fill("0")
+    page.get_by_label("Benefit label").fill("Special offer")
+    page.locator("button:has-text('Save business')").click()
+    expect(row).to_contain_text("Special offer", timeout=10000)
+    expect(row).not_to_contain_text("-0%")
+
+    page.goto(f"{app_url}/directory")
+    page.get_by_placeholder("Search").fill(f"E2E Store {stamp}")
+    card = page.locator(f"a[href^='/businesses/']:has-text('E2E Store {stamp}')")
+    expect(card).to_contain_text("Special offer", timeout=10000)
+    expect(card).not_to_contain_text("%")
+
     context.close()
 
 
