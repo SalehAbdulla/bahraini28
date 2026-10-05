@@ -207,7 +207,16 @@ Operational notes:
   pub/sub bus. Swap it for Redis pub/sub (same API surface) before scaling.
 - **Backups**: `deploy/backup.sh` — daily `pg_dump` (custom format) + uploads
   archive with 14-day retention; cron entry in `deploy/backup-cron.txt`.
-  Restore with `deploy/restore.sh <backup.pgdump>`.
+  `deploy/offsite-backup.sh` then copies both artifacts **off this host** with
+  `rclone` (config: `deploy/offsite.env`) — without it, every backup lives on the
+  same disk as the data it protects. Restore a *pair* from the same run:
+
+  ```bash
+  sudo deploy/restore.sh bahraini28-<stamp>.pgdump uploads-<stamp>.tar.gz
+  ```
+
+  The uploads archive is what puts the receipts and logos back; restoring the
+  dump alone leaves every `receipt_path` pointing at a file that is gone.
 - **SQLite → Postgres migration**: `backend/scripts/migrate_sqlite_to_postgres.py`
   (idempotent; re-syncs autoincrement sequences).
 - **CI** (`.github/workflows/ci.yml`): backend suite on SQLite **and**
