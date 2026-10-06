@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { api, RequestError } from "../api/client";
+import { api, authBlobUrl, RequestError } from "../api/client";
 import { useAuth } from "../auth/AuthContext";
 import Pagination from "../components/Pagination";
 import StatusPill from "../components/StatusPill";
@@ -13,6 +13,47 @@ const FILTERS = [
   { value: "rejected", label: "Rejected" },
   { value: "all", label: "All" },
 ];
+
+/**
+ * A receipt is private, so `<img src>` cannot load it directly (there is no way
+ * to attach the admin token). Fetch it with the token and show a temporary blob
+ * URL instead.
+ */
+function ReceiptThumb({ url, invoice }: { url: string; invoice: string }) {
+  const [href, setHref] = useState<string | null>(null);
+
+  useEffect(() => {
+    let objectUrl: string | null = null;
+    let active = true;
+    authBlobUrl(url, { admin: true })
+      .then((next) => {
+        if (active) {
+          objectUrl = next;
+          setHref(next);
+        } else {
+          URL.revokeObjectURL(next);
+        }
+      })
+      .catch(() => {
+        /* leave the placeholder in place */
+      });
+    return () => {
+      active = false;
+      if (objectUrl) URL.revokeObjectURL(objectUrl);
+    };
+  }, [url]);
+
+  if (!href) return <span className="text-ink-800/40">…</span>;
+  return (
+    <a href={href} target="_blank" rel="noreferrer" title="Open the full receipt">
+      <img
+        src={href}
+        alt={`Receipt for ${invoice}`}
+        className="h-12 w-12 border border-ink-900/15 object-cover"
+      />
+    </a>
+  );
+}
 
 export default function AdminReviews() {
   const { adminToken } = useAuth();
@@ -146,18 +187,7 @@ export default function AdminReviews() {
                 <tr key={t.id} className="border-t border-ink-900/10 align-top">
                   <td className="px-4 py-2">
                     {t.receipt_url ? (
-                      <a
-                        href={t.receipt_url}
-                        target="_blank"
-                        rel="noreferrer"
-                        title="Open the full receipt"
-                      >
-                        <img
-                          src={t.receipt_url}
-                          alt={`Receipt for ${t.invoice_number}`}
-                          className="h-12 w-12 border border-ink-900/15 object-cover"
-                        />
-                      </a>
+                      <ReceiptThumb url={t.receipt_url} invoice={t.invoice_number} />
                     ) : (
                       <span className="text-ink-800/40">—</span>
                     )}
