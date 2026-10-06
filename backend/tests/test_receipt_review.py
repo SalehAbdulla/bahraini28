@@ -19,7 +19,14 @@ from __future__ import annotations
 from sqlalchemy import select
 
 from app.models import RewardAdjustment, Transaction, User
-from tests.conftest import admin_login, auth_headers, login, make_business, make_user
+from tests.conftest import (
+    admin_login,
+    auth_headers,
+    login,
+    make_business,
+    make_test_settings,
+    make_user,
+)
 
 RECEIPT_BYTES = b"\x89PNG\r\n\x1a\n" + b"\x00" * 32
 
@@ -58,6 +65,36 @@ def test_submission_without_receipt_is_rejected(review_client, review_db):
     res = submit(review_client, token, bz.id, "INV-NORCPT", payload=None)
     assert res.status_code == 400
     assert res.json()["code"] == "receipt_required"
+
+
+def test_oversized_receipt_is_rejected(review_client, review_db):
+    """The server cap is the backstop; an oversized receipt is a clean 413.
+
+    The volunteer UI downscales photos before upload, so this only fires for an
+    un-resized image or an oversized PDF — it must not write a partial file or
+    credit anything.
+    """
+    _, token = user_token(review_client, review_db)
+    bz = make_business(review_db)
+    over = make_test_settings().MAX_UPLOAD_SIZE_MB * 1024 * 1024 + 1
+    res = submit(review_client, token, bz.id, "INV-BIG", payload=b"\x89PNG\r\n\x1a\n" + b"\x00" * over)
+    assert res.status_code == 413
+    assert res.json()["code"] == "file_too_large"
+
+
+def test_receipt_within_the_cap_is_accepted(review_client, review_db):
+    """A phone-sized photo (well past the old 2 MB ceiling) must be accepted.
+
+    Guards the lift of ``MAX_UPLOAD_SIZE_MB``: the browser shrinks most photos,
+    but an un-resized image — or a PDF, which is never resized — still has to
+    fit, so this fails if the cap creeps back down to 2.
+    """
+    _, token = user_token(review_client, review_db, email="big-upload@example.com")
+    bz = make_business(review_db)
+    payload = b"\x89PNG\r\n\x1a\n" + b"\x00" * (5 * 1024 * 1024)
+    res = submit(review_client, token, bz.id, "INV-5MB", payload=payload)
+    assert res.status_code == 201, res.text
+    assert res.json()["status"] == "pending"
 
 
 def test_submission_rejects_unsupported_receipt_type(review_client, review_db):
