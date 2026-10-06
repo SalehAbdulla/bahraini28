@@ -16,6 +16,8 @@ Covers the guarantees that make a reward *provable* rather than asserted:
 """
 from __future__ import annotations
 
+from pathlib import Path
+
 from sqlalchemy import select
 
 from app.models import RewardAdjustment, Transaction, User
@@ -129,7 +131,8 @@ def test_submission_with_receipt_is_pending_and_credits_nothing(review_client, r
     assert me["reward_points"] == 0  # nothing spendable yet
     assert me["pending_reward_points"] == 1
 
-    # The admin queue exposes the receipt URL (served from /uploads).
+    # The admin queue exposes an admin-only receipt URL — never the public
+    # /uploads path (which cannot serve it; see the privacy tests below).
     queue = review_client.get(
         "/api/v1/admin/transactions/review", headers=admin_headers(review_client)
     ).json()
@@ -137,7 +140,7 @@ def test_submission_with_receipt_is_pending_and_credits_nothing(review_client, r
     item = queue["items"][0]
     assert item["status"] == "pending"
     assert item["invoice_number"] == "INV-0001"
-    assert item["receipt_url"].startswith("/uploads/r")
+    assert item["receipt_url"].startswith("/api/v1/admin/receipts/r")
 
 
 # --- 3. approval credits once and audits ----------------------------------------
@@ -317,3 +320,63 @@ def test_tier1_fallback_credits_instantly_without_a_receipt(client, db):
     body = res.json()
     assert body["status"] == "approved"
     assert body["reward_points_balance"] == 1
+
+
+# --- 9. receipts are private ---------------------------------------------------
+
+
+def _receipt_item(review_client) -> dict:
+    """The one queue item a just-submitted receipt produced."""
+    queue = review_client.get(
+        "/api/v1/admin/transactions/review", headers=admin_headers(review_client)
+    ).json()
+    assert queue["total"] == 1
+    return queue["items"][0]
+
+
+def test_a_receipt_is_not_served_publicly(review_client, review_db):
+    """The receipt must not be readable from the public /uploads route.
+
+    Only business logos are public there. A receipt has no matching
+    ``logo_path``, so a leaked receipt URL is a 404 — while the admin route
+    serves the very same bytes to a signed-in admin.
+    """
+    _, token = user_token(review_client, review_db)
+    bz = make_business(review_db)
+    assert submit(review_client, token, bz.id, "INV-PRIV").status_code == 201
+
+    item = _receipt_item(review_client)
+    name = Path(item["receipt_url"]).name
+
+    assert review_client.get(f"/uploads/{name}").status_code == 404
+
+    served = review_client.get(item["receipt_url"], headers=admin_headers(review_client))
+    assert served.status_code == 200
+    assert served.headers["content-type"].startswith("image/png")
+    assert served.content.startswith(b"\x89PNG")
+
+
+def test_the_receipt_route_requires_an_admin_token(review_client, review_db):
+    """Neither an anonymous caller nor a volunteer token may read a receipt."""
+    _, token = user_token(review_client, review_db)
+    bz = make_business(review_db)
+    submit(review_client, token, bz.id, "INV-PRIV-2")
+    url = _receipt_item(review_client)["receipt_url"]
+
+    assert review_client.get(url).status_code == 401
+    assert review_client.get(url, headers=auth_headers(token)).status_code == 401
+
+
+def test_a_logo_is_still_public(review_client, review_db):
+    """The lockdown must not hide the logos the directory depends on."""
+    bz = make_business(review_db, cr="CR-LOGO-PUBLIC")
+    upload = review_client.post(
+        f"/api/v1/admin/businesses/{bz.id}/logo",
+        headers=admin_headers(review_client),
+        files={"file": ("logo.png", RECEIPT_BYTES, "image/png")},
+    )
+    assert upload.status_code == 200, upload.text
+
+    served = review_client.get(upload.json()["logo_url"])
+    assert served.status_code == 200
+    assert served.headers["content-type"].startswith("image/png")
