@@ -7,6 +7,7 @@ from tests.conftest import (
     login,
     make_area,
     make_business,
+    make_test_settings,
     make_user,
 )
 
@@ -190,10 +191,13 @@ def test_admin_upload_logo_rejects_unsupported_type(client, db):
 
 def test_admin_upload_logo_rejects_oversized_file(client, db):
     bz = make_business(db, cr="CR-LOGO3")
+    # One byte past the configured cap, so the test follows MAX_UPLOAD_SIZE_MB
+    # instead of pinning the value it happened to have when it was written.
+    over = make_test_settings().MAX_UPLOAD_SIZE_MB * 1024 * 1024 + 1
     res = client.post(
         f"/api/v1/admin/businesses/{bz.id}/logo",
         headers=_auth(client),
-        files={"file": ("big.png", b"\xff" * (3 * 1024 * 1024), "image/png")},
+        files={"file": ("big.png", b"\xff" * over, "image/png")},
     )
     assert res.status_code == 413
     assert res.json()["code"] == "file_too_large"
