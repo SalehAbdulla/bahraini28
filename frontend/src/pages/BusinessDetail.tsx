@@ -3,6 +3,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import { api, apiUpload, RequestError } from "../api/client";
 import { useAuth } from "../auth/AuthContext";
 import { benefitHeadline } from "../lib/benefit";
+import { prepareReceipt } from "../lib/receipt";
 import type {
   BusinessDetail as BusinessDetailType,
   Page,
@@ -57,9 +58,12 @@ export default function BusinessDetail() {
     setResult(null);
     setBusy(true);
     try {
-      // Multipart: the receipt file travels with the invoice fields, and the
-      // reward is credited only after an admin has reviewed the receipt.
-      const res = await apiUpload<TransactionCreatedOut>("/transactions", receipt, {
+      // Downscale the photo in the browser first — a phone JPEG is routinely
+      // 3-5 MB, far more than a legible receipt needs — then post it multipart
+      // with the invoice fields. The reward is credited only after an admin has
+      // reviewed the receipt.
+      const upload = await prepareReceipt(receipt);
+      const res = await apiUpload<TransactionCreatedOut>("/transactions", upload, {
         fields: {
           business_id: String(businessId),
           invoice_number: invoice.trim(),
@@ -203,6 +207,7 @@ export default function BusinessDetail() {
               ref={receiptInput}
               type="file"
               accept="image/png,image/jpeg,image/webp,application/pdf"
+              capture="environment"
               required
               onChange={(e) => setReceipt(e.target.files?.[0] ?? null)}
               className="mt-1 block w-full text-sm text-ink-800/80 file:mr-3 file:border file:border-ink-900/15 file:bg-white file:px-3 file:py-1.5 file:text-sm file:font-semibold file:text-ink-900 hover:file:bg-ink-900/5"
