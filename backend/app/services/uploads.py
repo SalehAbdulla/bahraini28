@@ -37,6 +37,18 @@ ALLOWED_RECEIPT_TYPES: dict[str, str] = {
 }
 
 
+def safe_upload_name(filename: str) -> str | None:
+    """Return ``filename`` when it is a bare file name, else ``None``.
+
+    Guards the upload-serving routes against path traversal: anything that is
+    not a plain name (``../secrets``, an absolute path, an empty string) is
+    reported as a miss so the caller can answer 404 without touching disk.
+    """
+    if not filename or filename in {".", ".."} or Path(filename).name != filename:
+        return None
+    return filename
+
+
 async def store_upload(
     file: UploadFile,
     *,
