@@ -114,8 +114,10 @@ Reuse the **existing** upload machinery from
   `_ALLOWED_RECEIPT_TYPES` (PNG/JPEG/WebP + `application/pdf`);
 - enforce `MAX_UPLOAD_SIZE_MB` via the existing `FileTooLargeError` /
   `UnsupportedFileTypeError`;
-- write to `settings.UPLOAD_DIR`, filename `r{business_id}-{uuid4}{ext}`,
-  served at `/uploads/{filename}`;
+- write to `settings.UPLOAD_DIR`, filename `r{business_id}-{uuid4}{ext}`.
+  (Superseded: receipts are now served to admins only, from
+  `/api/v1/admin/receipts/{filename}` — `/uploads` serves logos alone, so a
+  leaked receipt URL is a 404.)
 - compute `receipt_sha256 = hashlib.sha256(payload).hexdigest()`.
 
 Then delegate to the service. Keep the Tier 1 gates exactly as they are
