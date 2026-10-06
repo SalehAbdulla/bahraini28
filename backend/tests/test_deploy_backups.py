@@ -18,6 +18,7 @@ The behaviours worth locking down are the ones whose failure mode is silence:
 """
 from __future__ import annotations
 
+import configparser
 import os
 import shutil
 import subprocess
@@ -28,6 +29,8 @@ import pytest
 REPO = Path(__file__).resolve().parents[2]
 OFFSITE = REPO / "deploy" / "offsite-backup.sh"
 RESTORE = REPO / "deploy" / "restore.sh"
+RCLONE_OCI = REPO / "deploy" / "rclone-oci.conf.example"
+OFFSITE_ENV_EXAMPLE = REPO / "deploy" / "offsite.env.example"
 
 BASH = shutil.which("bash")
 pytestmark = pytest.mark.skipif(BASH is None, reason="bash is required")
@@ -253,6 +256,30 @@ def test_offsite_reads_deploy_offsite_env(tmp_path):
 
     assert result.returncode == 0, result.stderr
     assert "oci:from-the-file" in log.read_text().splitlines()
+
+
+# --- off-site target: the Oracle Object Storage example stays installable ------
+
+
+def test_rclone_oci_example_is_a_valid_single_remote():
+    """The file the docs tell operators to install must stay installable.
+
+    It is copied verbatim to ``~/.config/rclone/rclone.conf``, so it has to parse
+    and declare **exactly one** ``oci`` remote — uncommenting two of the flavour
+    examples (or adding a second section) would make rclone reject the file.
+    """
+    config = configparser.ConfigParser()
+    config.read(RCLONE_OCI)
+    assert config.sections() == ["oci"]
+    # oracleobjectstorage is the native API; s3 is the S3-compatible flavour.
+    assert config["oci"]["type"] in {"oracleobjectstorage", "s3"}
+
+
+def test_offsite_env_example_points_at_the_oci_remote():
+    """The env template must name the destination the example config backs."""
+    text = OFFSITE_ENV_EXAMPLE.read_text()
+    assert "oci:bahraini28-backups" in text
+    assert "rclone-oci.conf.example" in text
 
 
 # --- restore: the uploads volume is part of the backup -------------------------
