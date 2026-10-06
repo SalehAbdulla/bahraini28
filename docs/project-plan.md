@@ -275,7 +275,8 @@ or any Docker host. Full artifacts in `deploy/`, run guide in `README.md`:
   SSE bus), one-shot frontend builder, **Caddy** (auto-renewing TLS, serves
   SPA, proxies `/api`, `/uploads`, `/health`).
 - `deploy/deploy.sh` — one-command deploy + smoke path; `backup.sh` +
-  `offsite-backup.sh` (rclone → object storage, config `deploy/offsite.env`) /
+  `offsite-backup.sh` (rclone → object storage, config `deploy/offsite.env` and
+  the Oracle Object Storage free-tier remote in `deploy/rclone-oci.conf.example`) /
   `restore.sh` (restores the dump **and** the uploads archive) — daily `pg_dump`
   + uploads archive with 14-day local retention.
 - `deploy/.env.production.example` — production env template (DB credentials,
