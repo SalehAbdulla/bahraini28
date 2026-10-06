@@ -11,6 +11,7 @@ Run from the repo root:
 """
 from __future__ import annotations
 
+import re
 import time
 
 from playwright.sync_api import Page, expect
@@ -19,6 +20,15 @@ VOLUNTEER_EMAIL = "volunteer@example.com"
 VOLUNTEER_PASSWORD = "volunteer123"
 
 PENDING_MESSAGE = "Submitted — your reward is credited once the receipt is reviewed."
+
+# A real 1x1 PNG: the receipt thumbnail is served through the authenticated
+# admin route and rendered from a blob URL, so it has to decode for real.
+VALID_PNG = (
+    b"\x89PNG\r\n\x1a\n"
+    b"\x00\x00\x00\rIHDR\x00\x00\x00\x01\x00\x00\x00\x01\x08\x06\x00\x00\x00\x1f\x15\xc4\x89"
+    b"\x00\x00\x00\nIDATx\x9cc\x00\x01\x00\x00\x05\x00\x01\r\n-\xb4"
+    b"\x00\x00\x00\x00IEND\xaeB`\x82"
+)
 
 
 def _login_as_volunteer(page: Page, app_url: str) -> None:
@@ -58,7 +68,7 @@ def _submit_invoice(page: Page, prefix: str) -> str:
             {
                 "name": "receipt.png",
                 "mimeType": "image/png",
-                "buffer": b"\x89PNG\r\n\x1a\n" + b"\x00" * 512,
+                "buffer": VALID_PNG,
             }
         ],
     )
@@ -111,6 +121,12 @@ def test_volunteer_journey(browser, app_url: str) -> None:
 
     row = admin.locator("tr", has_text=invoice)
     expect(row).to_be_visible(timeout=10000)
+    # The receipt is private, so the thumbnail is fetched with the admin token
+    # and rendered from a blob URL — assert it actually decoded.
+    thumb = row.locator("img")
+    expect(thumb).to_be_visible(timeout=10000)
+    expect(thumb).to_have_attribute("src", re.compile(r"^blob:"))
+    assert thumb.evaluate("img => img.naturalWidth") > 0
     row.get_by_role("button", name="Approve").click()
     # Approving removes it from the *pending* queue.
     expect(admin.locator("tr", has_text=invoice)).to_have_count(0, timeout=10000)
