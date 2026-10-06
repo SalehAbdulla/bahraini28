@@ -65,7 +65,10 @@ class Settings(BaseSettings):
     # --- Assets -------------------------------------------------------------
     # Directors for uploaded business logos (served at /uploads).
     UPLOAD_DIR: str = "backend/uploads"
-    MAX_UPLOAD_SIZE_MB: int = 2
+    # A backstop, not the expected size: the volunteer UI downscales receipt
+    # photos in the browser before upload, so a typical submission is a few
+    # hundred KB. The cap only has to absorb an un-resized or non-image upload.
+    MAX_UPLOAD_SIZE_MB: int = 10
 
     # --- CORS --------------------------------------------------------------
     # Frontend origins allowed to call this API. The Vite dev server runs on
