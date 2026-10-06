@@ -89,6 +89,11 @@ run, and stops both servers on Ctrl-C. `WEB_PORT` overrides the SPA port; leave
 - Real-time admin notifications use **SSE** through a small in-process
   pub/sub bus (`app/services/notifications.py`). For multi-worker deployment,
   swap the bus for Redis pub/sub — same API surface.
+- Uploaded files (business logos + invoice receipts) share one helper
+  (`app/services/uploads.py`) and one cap, `MAX_UPLOAD_SIZE_MB`. Receipt photos
+  are downscaled in the browser first (`frontend/src/lib/receipt.ts`), so the cap
+  is a backstop — a phone JPEG is routinely 3-5 MB, a legible receipt a few
+  hundred KB — and the input requests the rear camera on mobile.
 
 ### Run (development)
 
