@@ -146,3 +146,28 @@ export async function apiUpload<T>(
   }
   return res.json() as T;
 }
+
+/**
+ * Fetch a private binary resource with the caller's token and return an object
+ * URL. `<img>`/`<a>` cannot attach an Authorization header, so an admin-only
+ * file (a receipt) is fetched here and shown through a temporary blob URL.
+ *
+ * `url` is used as-is — pass the full path the API returned (e.g. `receipt_url`),
+ * not something relative to the API prefix. The caller owns the returned URL and
+ * must `URL.revokeObjectURL` it when done.
+ */
+export async function authBlobUrl(
+  url: string,
+  opts: { admin?: boolean } = {}
+): Promise<string> {
+  const token = opts.admin ? getAdminToken() : getUserToken();
+  const headers: Record<string, string> = {};
+  if (token) headers["Authorization"] = `Bearer ${token}`;
+
+  const res = await fetch(url, { headers });
+  if (!res.ok) {
+    if (res.status === 401 && !opts.admin) setUserToken(null);
+    throw new RequestError(`Request failed (${res.status})`, res.status);
+  }
+  return URL.createObjectURL(await res.blob());
+}
