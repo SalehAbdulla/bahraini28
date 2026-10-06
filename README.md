@@ -224,7 +224,9 @@ Operational notes:
   archive with 14-day retention; cron entry in `deploy/backup-cron.txt`.
   `deploy/offsite-backup.sh` then copies both artifacts **off this host** with
   `rclone` (config: `deploy/offsite.env`) — without it, every backup lives on the
-  same disk as the data it protects. Restore a *pair* from the same run:
+  same disk as the data it protects. A ready-made **Oracle Object Storage** remote
+  (free tier; instance-principal, user-key and S3-compatible flavours) is in
+  `deploy/rclone-oci.conf.example`. Restore a *pair* from the same run:
 
   ```bash
   sudo deploy/restore.sh bahraini28-<stamp>.pgdump uploads-<stamp>.tar.gz
