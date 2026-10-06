@@ -11,9 +11,8 @@ from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
-from fastapi.staticfiles import StaticFiles
 
-from app.api.routes import admin, auth, businesses, notifications, transactions, users
+from app.api.routes import admin, auth, businesses, notifications, transactions, uploads, users
 from app.core.config import Settings, get_settings
 from app.core.errors import AppError
 from app.db.base import Base
@@ -75,9 +74,10 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     )
 
     # --- routes ----------------------------------------------------------------
-    uploads_dir = Path(settings.UPLOAD_DIR)
-    uploads_dir.mkdir(parents=True, exist_ok=True)
-    app.mount("/uploads", StaticFiles(directory=uploads_dir), name="uploads")
+    # Uploads live on disk under UPLOAD_DIR. There is no blanket static mount:
+    # logos are served by routes/uploads.py (public) and receipts by the admin
+    # route, so a receipt can never be fetched from /uploads/<file>.
+    Path(settings.UPLOAD_DIR).mkdir(parents=True, exist_ok=True)
 
     app.include_router(auth.router, prefix=settings.API_PREFIX)
     app.include_router(users.router, prefix=settings.API_PREFIX)
@@ -85,6 +85,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.include_router(transactions.router, prefix=settings.API_PREFIX)
     app.include_router(notifications.router, prefix=settings.API_PREFIX)
     app.include_router(admin.router, prefix=settings.API_PREFIX)
+    # Public logo serving — outside the API prefix (the SPA loads /uploads/<file>).
+    app.include_router(uploads.router)
 
     # --- health check ----------------------------------------------------------
     @app.get("/health", tags=["System"], include_in_schema=False)
