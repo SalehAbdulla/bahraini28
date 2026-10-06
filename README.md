@@ -94,6 +94,11 @@ run, and stops both servers on Ctrl-C. `WEB_PORT` overrides the SPA port; leave
   are downscaled in the browser first (`frontend/src/lib/receipt.ts`), so the cap
   is a backstop — a phone JPEG is routinely 3-5 MB, a legible receipt a few
   hundred KB — and the input requests the rear camera on mobile.
+- **Uploads are only partly public.** `/uploads/<file>` serves a file *only when
+  a partner references it as their logo* (`app/api/routes/uploads.py`); there is
+  no blanket static mount. Invoice receipts share the same directory on disk but
+  are served to admins only, from `/api/v1/admin/receipts/<file>`, so a leaked
+  receipt URL is inert.
 
 ### Run (development)
 
