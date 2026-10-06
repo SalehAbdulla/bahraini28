@@ -55,6 +55,8 @@ class TransactionReviewOut(TransactionOut):
 
     user_id: int
     user_name: str
+    #: Admin-only URL for the receipt image (``<api-prefix>/admin/receipts/<file>``).
+    #: Receipts are never served from the public ``/uploads`` route.
     receipt_url: str | None = None
     reviewed_at: datetime | None = None
 
