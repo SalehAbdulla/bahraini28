@@ -78,6 +78,8 @@ def test_personal_transaction_history(client, db):
     assert body["total"] == 2
     names = {t["business_name"] for t in body["items"]}
     assert names == {"Biz One", "Biz Two"}
+    # The volunteer's *own* history still carries the invoice number.
+    assert {t["invoice_number"] for t in body["items"]} == {"INV-1", "INV-2"}
 
 
 def test_public_business_transaction_history(client, db):
@@ -91,3 +93,5 @@ def test_public_business_transaction_history(client, db):
     body = res.json()
     assert body["total"] == 1
     assert body["items"][0]["business_name"] == bz.name
+    # The invoice number is never part of the public projection.
+    assert body["items"][0]["invoice_number"] is None

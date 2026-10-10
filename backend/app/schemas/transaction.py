@@ -27,7 +27,10 @@ class TransactionOut(ORMModel):
     id: int
     business_id: int
     business_name: str
-    invoice_number: str
+    #: ``None`` on the **public** per-business history (the invoice number is not
+    #: public). Always populated on the volunteer's own history, the admin ledger
+    #: and the review queue.
+    invoice_number: str | None = None
     reward_increment: int
     created_at: datetime
     #: ``pending`` | ``approved`` | ``rejected`` (see ``models.transaction``).

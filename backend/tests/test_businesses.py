@@ -1,7 +1,18 @@
-"""Public business directory tests: listing with filters and detail view."""
+"""Public business directory tests: listing with filters and detail view.
+
+The directory itself is public, but the exact member benefit (the discount) is
+a **member-only reveal** — these tests pin both halves: anonymous callers get
+``None``, a valid logged-in member gets the real figure.
+"""
 from __future__ import annotations
 
-from tests.conftest import make_area, make_business
+from tests.conftest import PAST, auth_headers, login, make_area, make_business, make_user
+
+
+def member_headers(client, db, email="member@example.com") -> dict:
+    """Log in a valid volunteer and return the bearer headers."""
+    make_user(db, email=email, password="pass12345", must_change_password=False)
+    return auth_headers(login(client, email, "pass12345"))
 
 
 def seed_directory(db):
@@ -53,8 +64,82 @@ def test_business_detail(client, db):
     assert res.status_code == 200
     body = res.json()
     assert body["name"] == "Alpha"
-    assert body["discount_percentage"] == 10
     assert body["areas"][0]["area_name"] == "Manama"
+    # Anonymous: the exact member benefit is not disclosed.
+    assert body["discount_percentage"] is None
+
+
+def test_business_detail_reveals_the_discount_to_a_member(client, db):
+    _manama, _riffa, b1, _b2 = seed_directory(db)
+    res = client.get(f"/api/v1/businesses/{b1.id}", headers=member_headers(client, db))
+    assert res.status_code == 200
+    assert res.json()["discount_percentage"] == 10
+
+
+def test_anonymous_detail_hides_the_offer_wording(client, db):
+    """For the pilot partners the offer text lives in ``description``
+    (``seed_partners`` sets ``description=offer``), so it is part of the
+    member-only reveal — otherwise it leaks the very discount we hide."""
+    bz = make_business(db, name="Watches", cr="CR-DESC", discount=25)
+    bz.description = "خصم 25%"
+    db.add(bz)
+    db.commit()
+
+    anon = client.get(f"/api/v1/businesses/{bz.id}").json()
+    assert anon["description"] is None
+    assert anon["discount_percentage"] is None
+
+    member = client.get(
+        f"/api/v1/businesses/{bz.id}", headers=member_headers(client, db)
+    ).json()
+    assert member["description"] == "خصم 25%"
+    assert member["discount_percentage"] == 25
+
+
+def test_anonymous_listing_hides_the_benefit(client, db):
+    """The directory is public, but the discount figures are not."""
+    seed_directory(db)
+    items = client.get("/api/v1/businesses").json()["items"]
+    assert items
+    assert all(b["discount_percentage"] is None for b in items)
+    assert all(b["discount_label"] is None for b in items)
+
+
+def test_member_listing_reveals_the_benefit(client, db):
+    seed_directory(db)
+    items = client.get("/api/v1/businesses", headers=member_headers(client, db)).json()["items"]
+    by_name = {b["name"]: b for b in items}
+    assert by_name["Alpha"]["discount_percentage"] == 10
+    assert by_name["Beta"]["discount_percentage"] == 25
+
+
+def test_invalid_token_is_treated_as_anonymous(client, db):
+    """A stale/garbage token must not 401 a public page — it degrades to the
+    redacted anonymous view instead."""
+    seed_directory(db)
+    res = client.get(
+        "/api/v1/businesses", headers={"Authorization": "Bearer not-a-real-token"}
+    )
+    assert res.status_code == 200
+    assert res.json()["items"][0]["discount_percentage"] is None
+
+
+def test_expired_member_sees_the_redacted_view(client, db):
+    """Expiry is enforced for the reveal exactly as it is for login."""
+    seed_directory(db)
+    user = make_user(
+        db, email="expired@example.com", password="pass12345", must_change_password=False
+    )
+    headers = auth_headers(login(client, "expired@example.com", "pass12345"))
+    # Expire the membership *after* login (login itself blocks expired accounts).
+    db.refresh(user)
+    user.expiry_date = PAST
+    db.add(user)
+    db.commit()
+
+    res = client.get("/api/v1/businesses", headers=headers)
+    assert res.status_code == 200
+    assert res.json()["items"][0]["discount_percentage"] is None
 
 
 def test_public_payloads_carry_the_benefit_label(client, db):
@@ -63,20 +148,28 @@ def test_public_payloads_carry_the_benefit_label(client, db):
     bz = make_business(
         db, name="Hospital", cr="CR-LABEL", discount=0, discount_label="خدمات مختارة"
     )
+    headers = member_headers(client, db)
 
-    summary = client.get("/api/v1/businesses").json()["items"][0]
+    summary = client.get("/api/v1/businesses", headers=headers).json()["items"][0]
     assert summary["discount_percentage"] == 0
     assert summary["discount_label"] == "خدمات مختارة"
 
-    detail = client.get(f"/api/v1/businesses/{bz.id}").json()
+    detail = client.get(f"/api/v1/businesses/{bz.id}", headers=headers).json()
     assert detail["discount_label"] == "خدمات مختارة"
 
 
 def test_percentage_only_partner_has_no_label(client, db):
     bz = make_business(db, name="Cafe", cr="CR-PLAIN", discount=20)
+    headers = member_headers(client, db)
 
-    assert client.get("/api/v1/businesses").json()["items"][0]["discount_label"] is None
-    assert client.get(f"/api/v1/businesses/{bz.id}").json()["discount_label"] is None
+    assert (
+        client.get("/api/v1/businesses", headers=headers).json()["items"][0]["discount_label"]
+        is None
+    )
+    assert (
+        client.get(f"/api/v1/businesses/{bz.id}", headers=headers).json()["discount_label"]
+        is None
+    )
 
 
 def test_business_detail_not_found(client, db):

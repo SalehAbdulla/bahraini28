@@ -85,6 +85,41 @@ def _login_as_admin(page: Page, app_url: str) -> None:
     expect(page.get_by_text("Admin Dashboard")).to_be_visible(timeout=10000)
 
 
+def _create_member_session(context, app_url: str, page: Page) -> None:
+    """Create a fresh volunteer via the admin API and sign in as them.
+
+    The exact partner benefit is a member-only reveal, so a member session is
+    required to see the discount/label on a directory card.
+    """
+    stamp = int(time.time() * 1000)
+    admin_login = context.request.post(
+        f"{app_url}/api/v1/auth/admin/login",
+        data={"username": "admin", "password": "admin123"},
+    )
+    assert admin_login.ok, admin_login.text()
+    token = admin_login.json()["access_token"]
+
+    created = context.request.post(
+        f"{app_url}/api/v1/admin/users",
+        data={
+            "cpr": f"M{stamp % 10**11:011d}",
+            "email": f"member-{stamp}@example.com",
+            "name": "Directory Member",
+            "password": "member-pass-123",
+            "expiry_date": "2099-01-01T00:00:00Z",
+            "reward_points": 0,
+        },
+        headers={"Authorization": f"Bearer {token}"},
+    )
+    assert created.ok, created.text()
+
+    page.goto(f"{app_url}/login")
+    page.fill("#identifier", f"member-{stamp}@example.com")
+    page.fill("#password", "member-pass-123")
+    page.click("button:has-text('Sign in')")
+    _activate_if_needed(page)
+
+
 def test_volunteer_journey(browser, app_url: str) -> None:
     context = browser.new_context()
     page = context.new_page()
@@ -197,8 +232,19 @@ def test_admin_registers_business(browser, app_url: str) -> None:
     page.goto(f"{app_url}/directory")
     page.get_by_placeholder("Search").fill(f"E2E Store {stamp}")
     card = page.locator(f"a[href^='/businesses/']:has-text('E2E Store {stamp}')")
-    expect(card).to_contain_text("Special offer", timeout=10000)
-    expect(card).not_to_contain_text("%")
+    # Anonymous: the exact benefit is withheld, so the card shows a lock rather
+    # than the label.
+    expect(card).to_contain_text("Members only", timeout=10000)
+    expect(card).not_to_contain_text("Special offer")
+
+    # A logged-in member sees the real benefit label (and never a "-0%").
+    member = context.new_page()
+    _create_member_session(context, app_url, member)
+    member.goto(f"{app_url}/directory")
+    member.get_by_placeholder("Search").fill(f"E2E Store {stamp}")
+    member_card = member.locator(f"a[href^='/businesses/']:has-text('E2E Store {stamp}')")
+    expect(member_card).to_contain_text("Special offer", timeout=10000)
+    expect(member_card).not_to_contain_text("%")
 
     context.close()
 

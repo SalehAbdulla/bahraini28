@@ -96,6 +96,27 @@ Seamlessly bridges physical retail interactions with digital accountability, ens
       databases. The `/admin/businesses/{id}/codes` page is covered by the
       `e2e/test_layout.py` gutter guard.
 
+### Phase 7: Member-only benefit reveal — ✅ done
+- [x] The directory (partner name, logo, category, areas) stays public, but the
+      exact **discount is withheld from anonymous callers**: `GET
+      /api/v1/businesses` and `/{id}` blank `discount_percentage` /
+      `discount_label` unless the request carries a valid, unexpired member
+      token, via the new `app/api/deps.py::get_optional_user` (an invalid/stale
+      token degrades to the anonymous view instead of a 401). The frontend
+      renders a "Members only" lock (`BusinessCard`) / a "sign in to see your
+      discount" pill (`BusinessDetail`) when the figure is absent.
+- [x] The partner **`description` is redacted for anonymous callers** as well:
+      the pilot partners store the elite-card offer wording there
+      (`seed_partners` sets `description=offer`), so it would otherwise leak the
+      discount verbatim (e.g. "خصم 25%"). Members still see it.
+- [x] The public per-business transaction history no longer exposes
+      `invoice_number` (`TransactionOut.invoice_number` is `None` there; it stays
+      populated on the volunteer's own history, the admin ledger and the review
+      queue). Covered by `backend/tests/test_businesses.py` and
+      `backend/tests/test_transactions.py`, with the directory card asserted in
+      `e2e/test_journey.py` for both the anonymous (lock) and member (label)
+      views.
+
 ---
 
 ## Domain

@@ -73,6 +73,52 @@ def get_current_user(
     return user
 
 
+def get_optional_user(
+    credentials: Annotated[
+        HTTPAuthorizationCredentials | None, Depends(bearer_scheme)
+    ] = None,
+    db: Annotated[Session, Depends(get_db)] = None,  # type: ignore[assignment]
+) -> User | None:
+    """Resolve the caller when they present a *valid* user token, else ``None``.
+
+    This is the public-directory variant of :func:`get_current_user`: an
+    anonymous visitor (no token) is never rejected — they simply receive the
+    redacted view (e.g. no discount figures). A malformed, expired, revoked or
+    expired-membership token is treated as anonymous too, so a stale token in a
+    browser can never break a public page with a 401.
+
+    The membership guards deliberately mirror :func:`get_current_user`, so the
+    member-only reveal uses exactly the same definition of "valid member".
+    """
+    if credentials is None or credentials.scheme.lower() != "bearer":
+        return None
+    try:
+        payload = decode_token(credentials.credentials)
+    except jwt.PyJWTError:
+        return None
+    if payload.get("role") != "user":
+        return None
+
+    try:
+        user = db.get(User, int(payload["sub"]))
+    except (KeyError, TypeError, ValueError):
+        return None
+    if user is None:
+        return None
+
+    # --- single-session enforcement ---------------------------------------
+    if payload.get("ver") != user.token_version:
+        return None
+
+    # --- status guards ------------------------------------------------------
+    if not user.is_active:
+        return None
+    if user.expiry_date is not None and user.expiry_date <= datetime.now(timezone.utc):
+        return None
+
+    return user
+
+
 def get_current_admin(
     credentials: Annotated[
         HTTPAuthorizationCredentials | None, Depends(bearer_scheme)
@@ -92,6 +138,8 @@ def get_current_admin(
 # --- convenience type aliases -------------------------------------------------
 DbSession = Annotated[Session, Depends(get_db)]
 CurrentUser = Annotated[User, Depends(get_current_user)]
+#: Like ``CurrentUser`` but ``None`` for an anonymous (or invalid-token) caller.
+OptionalUser = Annotated[User | None, Depends(get_optional_user)]
 CurrentAdmin = Annotated[Admin, Depends(get_current_admin)]
 
 

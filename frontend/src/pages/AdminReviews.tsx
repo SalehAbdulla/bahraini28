@@ -19,7 +19,7 @@ const FILTERS = [
  * to attach the admin token). Fetch it with the token and show a temporary blob
  * URL instead.
  */
-function ReceiptThumb({ url, invoice }: { url: string; invoice: string }) {
+function ReceiptThumb({ url, invoice }: { url: string; invoice: string | null }) {
   const [href, setHref] = useState<string | null>(null);
 
   useEffect(() => {
@@ -48,7 +48,7 @@ function ReceiptThumb({ url, invoice }: { url: string; invoice: string }) {
     <a href={href} target="_blank" rel="noreferrer" title="Open the full receipt">
       <img
         src={href}
-        alt={`Receipt for ${invoice}`}
+        alt={invoice ? `Receipt for ${invoice}` : "Receipt"}
         className="h-12 w-12 border border-ink-900/15 object-cover"
       />
     </a>

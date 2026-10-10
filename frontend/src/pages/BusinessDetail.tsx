@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState, type FormEvent } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { Link, useNavigate, useParams } from "react-router-dom";
 import { api, apiUpload, RequestError } from "../api/client";
 import { useAuth } from "../auth/AuthContext";
+import StatusPill from "../components/StatusPill";
 import { benefitHeadline } from "../lib/benefit";
 import { prepareReceipt } from "../lib/receipt";
 import type {
@@ -130,15 +131,39 @@ export default function BusinessDetail() {
               </p>
             </div>
           </div>
-          {benefit && (
+          {benefit ? (
             <span className="inline-block text-sm font-semibold px-3 py-1 bg-brand-100 text-brand-700">
               {business.discount_label ? benefit : `${benefit} discount`}
             </span>
-          )}
+          ) : !isUser ? (
+            <Link
+              to="/login"
+              className="inline-flex items-center gap-1.5 border border-brand-200 bg-brand-50 px-3 py-1 text-sm font-semibold text-brand-700 transition-colors hover:bg-brand-100"
+            >
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.6"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                className="h-3.5 w-3.5"
+                aria-hidden="true"
+              >
+                <rect x="5" y="11" width="14" height="9" rx="1" />
+                <path d="M8 11V8a4 4 0 0 1 8 0v3" />
+              </svg>
+              Sign in to see your discount
+            </Link>
+          ) : null}
         </div>
-        <p className="mt-4 text-ink-800/70">
-          {business.description ?? "No description provided."}
-        </p>
+        {/* The offer wording is members-only, so an anonymous visitor gets no
+            paragraph here (the lock pill above explains why). */}
+        {business.description ? (
+          <p className="mt-4 text-ink-800/70">{business.description}</p>
+        ) : isUser ? (
+          <p className="mt-4 text-ink-800/70">No description provided.</p>
+        ) : null}
         <div className="mt-5">
           <h3 className="mb-2 font-serif text-lg font-normal text-ink-900">
             Active areas / branches
@@ -240,16 +265,20 @@ export default function BusinessDetail() {
           <table className="w-full text-sm">
             <thead>
               <tr className="bg-ink-900/5 text-left text-ink-800/60">
-                <th className="px-4 py-2">Invoice</th>
+                {/* No invoice number here: this table is public, and an invoice
+                    number identifies a customer's purchase. */}
                 <th className="px-4 py-2">Reward</th>
+                <th className="px-4 py-2">Status</th>
                 <th className="px-4 py-2">Date</th>
               </tr>
             </thead>
             <tbody>
               {history.map((t) => (
                 <tr key={t.id} className="border-t border-ink-900/10">
-                  <td className="px-4 py-2">{t.invoice_number}</td>
                   <td className="px-4 py-2">+{t.reward_increment}</td>
+                  <td className="px-4 py-2">
+                    <StatusPill status={t.status} />
+                  </td>
                   <td className="px-4 py-2">{fmtDate(t.created_at)}</td>
                 </tr>
               ))}

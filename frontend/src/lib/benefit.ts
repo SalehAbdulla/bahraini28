@@ -8,10 +8,16 @@ import type { BusinessSummary } from "../types";
  * stored with `discount_percentage = 0`, and printing "-0%" for it would be both
  * wrong and ugly. `null` means there is nothing to show yet — render no badge at
  * all rather than a zero.
+ *
+ * `discount_percentage` is also `null` for an anonymous visitor, because the
+ * API withholds the exact benefit from non-members; the caller decides whether
+ * to render a "members only" lock instead (see `BusinessCard`).
  */
 export function benefitHeadline(
   business: Pick<BusinessSummary, "discount_label" | "discount_percentage">,
 ): string | null {
   if (business.discount_label) return business.discount_label;
-  return business.discount_percentage > 0 ? `-${business.discount_percentage}%` : null;
+  return (business.discount_percentage ?? 0) > 0
+    ? `-${business.discount_percentage}%`
+    : null;
 }

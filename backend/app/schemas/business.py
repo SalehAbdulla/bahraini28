@@ -24,10 +24,16 @@ class BusinessDetail(ORMModel):
     logo_url: str | None = None
     category_id: int
     category_name: str
-    discount_percentage: int
+    #: ``None`` for an anonymous caller: the exact member benefit is revealed
+    #: only to a valid, logged-in member (see ``api.routes.businesses``).
+    discount_percentage: int | None = None
     #: Short headline shown instead of the percentage when the benefit is not a
     #: flat percentage (e.g. "Special offer"); ``None`` means show the number.
+    #: Redacted to ``None`` for anonymous callers, like the percentage.
     discount_label: str | None = None
+    #: ``None`` for an anonymous caller. The pilot partners carry the elite-card
+    #: benefit wording here (``seed_partners`` sets ``description=offer``), so it
+    #: is part of the member-only reveal, not public marketing copy.
     description: str | None = None
     invoice_pattern: str | None = None
     #: True when this partner prints single-use codes, so the submission form
@@ -43,9 +49,11 @@ class BusinessSummary(ORMModel):
     name: str
     logo_url: str | None = None
     category_name: str
-    discount_percentage: int
+    #: ``None`` for an anonymous caller — the exact benefit is a member-only
+    #: reveal (see ``api.routes.businesses``).
+    discount_percentage: int | None = None
     #: Set when the partner's benefit is not a flat percentage — the card then
-    #: prints this instead of a "-0%" badge.
+    #: prints this instead of a "-0%" badge. Also redacted for anonymous callers.
     discount_label: str | None = None
     areas: list[str] = []
 

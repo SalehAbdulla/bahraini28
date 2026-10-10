@@ -1,9 +1,16 @@
 import { Link } from "react-router-dom";
+import { useAuth } from "../auth/AuthContext";
 import type { BusinessSummary } from "../types";
 import { benefitHeadline } from "../lib/benefit";
 
+/**
+ * The member benefit is a member-only reveal: for an anonymous visitor the API
+ * withholds the discount, so the card shows a lock badge instead of a number.
+ */
 export default function BusinessCard({ business }: { business: BusinessSummary }) {
+  const { isUser } = useAuth();
   const benefit = benefitHeadline(business);
+  const locked = !isUser && !benefit;
   return (
     <Link
       to={`/businesses/${business.id}`}
@@ -21,11 +28,28 @@ export default function BusinessCard({ business }: { business: BusinessSummary }
             {business.name.charAt(0)}
           </span>
         )}
-        {benefit && (
+        {benefit ? (
           <span className="border border-brand-200 bg-brand-50 px-2.5 py-1 text-xs font-semibold text-brand-700">
             {benefit}
           </span>
-        )}
+        ) : locked ? (
+          <span className="inline-flex items-center gap-1 border border-ink-900/15 bg-ink-900/5 px-2.5 py-1 text-xs font-semibold text-ink-800/70">
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.6"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              className="h-3 w-3"
+              aria-hidden="true"
+            >
+              <rect x="5" y="11" width="14" height="9" rx="1" />
+              <path d="M8 11V8a4 4 0 0 1 8 0v3" />
+            </svg>
+            Members only
+          </span>
+        ) : null}
       </div>
 
       <span className="mt-5 text-[11px] font-semibold uppercase tracking-[0.14em] text-ink-800/50">

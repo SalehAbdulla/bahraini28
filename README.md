@@ -19,6 +19,16 @@ Monorepo with two independent components:
 
 - **Strict membership validation**: volunteers log in by **email or CPR**;
   access is blocked once `expiry_date` passes (checked on every request).
+- **Member-only benefit reveal**: the directory (partner names, logos,
+  categories, areas) stays public, but the **exact discount** is withheld from
+  anonymous callers — `GET /api/v1/businesses` and `/{id}` return
+  `discount_percentage: null` / `discount_label: null` unless the request
+  carries a valid, unexpired member token (an invalid or stale token degrades to
+  the anonymous view rather than a 401). The partner **`description` is redacted
+  too**, because the pilot partners carry the elite-card benefit wording there
+  (`seed_partners` sets `description=offer`) — leaving it public would leak the
+  discount itself. The public per-business transaction history never exposes an
+  `invoice_number` either. Implemented by `app/api/deps.py::get_optional_user`.
 - **Single-session enforcement**: each new user login rolls `token_version`,
   invalidating all older tokens. Admins are exempt (multi-tab friendly).
 - **Daily usage limit**: at most **3 uses per business per calendar day**
@@ -160,8 +170,9 @@ so the dev proxy and the production reverse proxy need no extra config.
 ### Pages
 
 - Public: landing, directory (category/area/search filters), business detail
-  (discount %, branches, invoice **+ receipt** submission), public transaction
-  history.
+  (branches, invoice **+ receipt** submission), public transaction history. The
+  exact **discount is a member-only reveal** — an anonymous visitor sees a
+  "sign in to see your discount" lock instead of the figure.
 - Volunteer: profile + rewards cards split into **approved (spendable)** and
   **awaiting review**, personal history with per-row `pending`/`approved`/
   `rejected` status, first-login activation modal.

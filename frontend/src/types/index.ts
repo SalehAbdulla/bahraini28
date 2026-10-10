@@ -38,9 +38,11 @@ export interface BusinessDetail {
   logo_url: string | null;
   category_id: number;
   category_name: string;
-  discount_percentage: number;
+  /** `null` for an anonymous visitor — the exact benefit is a member-only
+   *  reveal, returned only when the request carries a valid member token. */
+  discount_percentage: number | null;
   /** Short headline replacing the percentage when the benefit is not a flat
-   *  percentage (e.g. "Special offer"). */
+   *  percentage (e.g. "Special offer"). Also `null` for anonymous visitors. */
   discount_label: string | null;
   description: string | null;
   invoice_pattern: string | null;
@@ -56,7 +58,8 @@ export interface BusinessSummary {
   name: string;
   logo_url: string | null;
   category_name: string | null;
-  discount_percentage: number;
+  /** `null` for an anonymous visitor (member-only reveal). */
+  discount_percentage: number | null;
   discount_label: string | null;
   areas: string[];
 }

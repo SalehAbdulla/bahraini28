@@ -5,7 +5,7 @@ import math
 
 from fastapi import APIRouter, Query
 
-from app.api.deps import DbSession
+from app.api.deps import DbSession, OptionalUser
 from app.core.errors import BusinessNotFoundError
 from app.models import Business
 from app.schemas.business import (
@@ -26,6 +26,7 @@ router = APIRouter(prefix="/businesses", tags=["Businesses"])
 @router.get("", response_model=Page[BusinessSummary])
 def list_businesses(
     db: DbSession,
+    user: OptionalUser,
     category: str | None = Query(None, description="Category slug"),
     area_id: int | None = Query(None, ge=1),
     q: str | None = Query(None, description="Search by name/description"),
@@ -33,7 +34,13 @@ def list_businesses(
     page_size: int = Query(12, ge=1, le=50),
 ):
     """Public catalog of participating merchants, filterable by category,
-    area, or keyword. Only active partnerships are shown."""
+    area, or keyword. Only active partnerships are shown.
+
+    The exact member benefit (``discount_percentage`` / ``discount_label``) is
+    a **member-only reveal**: it is blanked for an anonymous caller and returned
+    only to a valid, logged-in member. Partner name, logo, category and areas
+    stay public so the directory remains a discovery funnel.
+    """
     items, total = business_service.list_businesses(
         db,
         category_slug=category,
@@ -42,6 +49,7 @@ def list_businesses(
         page=page,
         page_size=page_size,
     )
+    reveal_benefit = user is not None
     area_names = business_service.area_names_for(db, [b.id for b in items])
     return Page[BusinessSummary](
         items=[
@@ -50,8 +58,8 @@ def list_businesses(
                 name=b.name,
                 logo_url=b.logo_path,
                 category_name=b.category.name if b.category else None,
-                discount_percentage=b.discount_percentage,
-                discount_label=b.discount_label,
+                discount_percentage=b.discount_percentage if reveal_benefit else None,
+                discount_label=b.discount_label if reveal_benefit else None,
                 areas=area_names.get(b.id, []),
             )
             for b in items
@@ -79,11 +87,20 @@ def list_areas(db: DbSession):
 
 
 @router.get("/{business_id}", response_model=BusinessDetail)
-def business_detail(business_id: int, db: DbSession):
-    """Detail view: discount %, logo, branch areas and partnership status."""
+def business_detail(business_id: int, db: DbSession, user: OptionalUser):
+    """Detail view: logo, branch areas, partnership status and — for a valid
+    logged-in member only — the exact discount and the offer wording.
+
+    The member benefit is redacted for anonymous callers (see
+    :func:`list_businesses`); everything else needed to find the shop stays
+    public. ``description`` is redacted too: for the pilot partners it holds the
+    benefit text itself (``seed_partners`` stores the elite-card offer there),
+    so leaving it public would leak the very discount this reveal protects.
+    """
     business = db.get(Business, business_id)
     if business is None:
         raise BusinessNotFoundError
+    reveal_benefit = user is not None
     return BusinessDetail(
         id=business.id,
         name=business.name,
@@ -91,9 +108,9 @@ def business_detail(business_id: int, db: DbSession):
         logo_url=business.logo_path,
         category_id=business.category_id,
         category_name=business.category.name if business.category else None,
-        discount_percentage=business.discount_percentage,
-        discount_label=business.discount_label,
-        description=business.description,
+        discount_percentage=business.discount_percentage if reveal_benefit else None,
+        discount_label=business.discount_label if reveal_benefit else None,
+        description=business.description if reveal_benefit else None,
         codes_required=business.codes_required,
         is_active=business.is_active,
         expiry_date=business.expiry_date,
@@ -118,7 +135,12 @@ def business_transactions(
     page: int = Query(1, ge=1),
     page_size: int = Query(10, ge=1, le=50),
 ):
-    """Paginated public transaction history for a business."""
+    """Paginated public transaction history for a business.
+
+    Public-safe projection: the invoice number, the rejection note and the
+    receipt image all belong to the volunteer and the admins, so only the
+    reward, timestamp and review status are exposed here.
+    """
     business = db.get(Business, business_id)
     if business is None:
         raise BusinessNotFoundError
@@ -134,11 +156,11 @@ def business_transactions(
                 id=t.id,
                 business_id=t.business_id,
                 business_name=t.business.name if t.business else None,
-                invoice_number=t.invoice_number,
+                # Never public: an invoice number can identify a customer's
+                # purchase. Only the volunteer and the admins see it.
+                invoice_number=None,
                 reward_increment=t.reward_increment,
                 created_at=t.created_at,
-                # Public history: status only — never the rejection note or the
-                # receipt image, which belong to the volunteer and the admins.
                 status=t.status,
             )
             for t in items
