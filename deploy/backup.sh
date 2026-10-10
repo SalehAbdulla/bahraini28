@@ -6,6 +6,9 @@ set -euo pipefail
 # Expected clone location: /opt/bahraini28  (set BAHRAINI28_DIR to override).
 # Output: /var/backups/bahraini28/  (set BACKUP_DIR to override).
 # Retention: BACKUP_KEEP_DAYS (default 14).
+# Compose file: deploy/docker-compose.yml — set BAHRAINI28_COMPOSE to
+# deploy/docker-compose.cohost.yml when the stack is co-hosted behind another
+# reverse proxy on a shared VPS (see the README's co-hosting section).
 #
 # Install as root (see deploy/backup-cron.txt):
 #   sudo mkdir -p /opt/bahraini28 /var/backups/bahraini28
@@ -16,6 +19,7 @@ set -euo pipefail
 APP_DIR="${BAHRAINI28_DIR:-/opt/bahraini28}"
 BACKUP_DIR="${BACKUP_DIR:-/var/backups/bahraini28}"
 KEEP_DAYS="${BACKUP_KEEP_DAYS:-14}"
+COMPOSE_FILE="${BAHRAINI28_COMPOSE:-deploy/docker-compose.yml}"
 STAMP="$(date +%Y%m%d-%H%M%S)"
 # `date -Is` is a GNU extension — BSD/macOS `date` rejects it and prints an error
 # instead of a timestamp, so build the ISO-8601 UTC stamp from the portable form.
@@ -25,7 +29,7 @@ mkdir -p "$BACKUP_DIR"
 cd "$APP_DIR"
 
 echo "[$(iso8601)] Dumping PostgreSQL..."
-docker compose -f deploy/docker-compose.yml exec -T postgres \
+docker compose -f "$COMPOSE_FILE" exec -T postgres \
   sh -c 'pg_dump -U "${POSTGRES_USER:-bahraini28}" -d "${POSTGRES_DB:-bahraini28}" -Fc' \
   > "$BACKUP_DIR/bahraini28-$STAMP.pgdump"
 

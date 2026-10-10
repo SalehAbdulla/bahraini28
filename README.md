@@ -265,6 +265,60 @@ at `https://bahraini28.com/` and the API at `/api/v1/*`. Optional CAA record:
 `0 issue "letsencrypt.org"`. The SSE feed works through the proxy via
 `/api/v1/admin/notifications/stream` (admin JWT as `?_token=`).
 
+### Co-hosting on a shared VPS (tenant behind another reverse proxy)
+
+If the host **already runs another reverse proxy that owns `:80`/`:443`** (for
+example beyond's `beyond-nginx`), do **not** run the standalone stack above —
+its Caddy would fight the existing proxy for those ports. Use the co-host files
+instead; they make bahraini28 a tenant on the shared `beyond-prod` network:
+
+| File | Purpose |
+| --- | --- |
+| `deploy/docker-compose.cohost.yml` | Complete stack: Caddy publishes **no** host ports, joins `beyond-prod` as `bahraini28-web`, log caps + memory limits on every service. |
+| `deploy/Caddyfile.cohost` | HTTP-only Caddy site (TLS is terminated at the edge). |
+| `deploy/nginx-bahraini28.conf` | Edge vhost to drop into the other proxy's `sites/` (SSE-safe, own cert names). |
+| `deploy/certbot-deploy-hook.sh` | Copies the renewed cert into the edge and reloads it. |
+
+Why a *complete* file and not a `-f base -f override` pair: Compose **concatenates**
+`ports` across `-f` files, so an override could never remove the base stack's
+`80`/`443` publish.
+
+Runbook (on the VPS; the other stack must be up first, so `beyond-prod` exists):
+
+```bash
+# 1. Bring up the tenant stack (no host ports, behind the existing proxy).
+cd /opt/bahraini28
+docker compose -f deploy/docker-compose.cohost.yml up -d --build
+
+# 2. Install the edge vhost into the OTHER proxy, then test BEFORE reloading.
+cp deploy/nginx-bahraini28.conf ~/beyond/docker/nginx/sites/bahraini28.conf
+docker exec beyond-nginx nginx -t && docker exec beyond-nginx nginx -s reload
+
+# 3. Issue the certificate for bahraini28.com (+ www), then install the hook so
+#    renewals keep copying it into the edge and reloading it.
+sudo certbot certonly --webroot -w ~/beyond/docker/nginx/certbot-webroot \
+    -d bahraini28.com -d www.bahraini28.com
+sudo install -m 755 deploy/certbot-deploy-hook.sh \
+    /etc/letsencrypt/renewal-hooks/deploy/bahraini28-nginx.sh
+sudo /etc/letsencrypt/renewal-hooks/deploy/bahraini28-nginx.sh   # copy it in now
+```
+
+Point `A @` and `A www` for **bahraini28.com** at the VPS public IP.
+
+Co-hosting notes:
+
+- **Backups**: the compose project is still named `bahraini28`, so the volume
+  names (`bahraini28_uploads`, …) are unchanged. Point the scripts at the
+  co-host file with `BAHRAINI28_COMPOSE=deploy/docker-compose.cohost.yml`
+  (used by `deploy/backup.sh` and `deploy/restore.sh`; set it in the cron line).
+- **Own cert filenames**: the vhost uses `bahraini28-*.pem`, never the edge's
+  `fullchain.pem`/`privkey.pem` — overwriting those would break the other sites.
+- **SSE**: the vhost gives `/api/v1/admin/notifications/stream` its own
+  `proxy_buffering off` location, or the admin live feed would stall.
+- **Log caps matter**: unbounded json-file logs have filled this host's root
+  disk before; every service in the co-host file caps its logs.
+- Don't run `./deploy/deploy.sh` here — it assumes it owns `:80`.
+
 ### E2E tests (Playwright)
 
 Boots the real stack (seeded FastAPI on :8000 + Vite on :5173) against a

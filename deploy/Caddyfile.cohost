@@ -1,0 +1,32 @@
+# Bahraini 28 — Caddy v2 configuration for the CO-HOSTED deploy.
+#
+# Unlike deploy/Caddyfile this one does NOT do ACME. beyond-nginx terminates TLS
+# for bahraini28.com and proxies here over the shared `beyond-prod` network, so
+# the site address is a bare `:80` (no hostname): Caddy serves plain HTTP for
+# whatever Host the edge forwards and never attempts a certificate.
+#
+# Selected by deploy/docker-compose.cohost.yml (mounted at /etc/caddy/Caddyfile).
+
+{
+	admin off
+}
+
+:80 {
+	encode zstd gzip
+
+	root * /srv
+	try_files {path} /index.html
+
+	header {
+		X-Content-Type-Options "nosniff"
+		Referrer-Policy "strict-origin-when-cross-origin"
+		X-Frame-Options "DENY"
+		-X-Server
+	}
+
+	# FastAPI backend (health probe, REST API, uploads, SSE feed).
+	# Caddy flushes streaming responses, so the admin SSE feed passes through.
+	reverse_proxy /health backend:8000
+	reverse_proxy /api/* backend:8000
+	reverse_proxy /uploads/* backend:8000
+}

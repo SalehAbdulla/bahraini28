@@ -18,6 +18,8 @@ APP_DIR="${BAHRAINI28_DIR:-/opt/bahraini28}"
 DUMP="${1:-}"
 UPLOADS="${2:-}"
 VOLUME="${UPLOADS_VOLUME:-bahraini28_uploads}"
+# Same switch as deploy/backup.sh: point at the co-host compose file on a shared VPS.
+COMPOSE_FILE="${BAHRAINI28_COMPOSE:-deploy/docker-compose.yml}"
 
 if [ -z "$DUMP" ] || [ ! -f "$DUMP" ]; then
   echo "usage: $0 <backup.pgdump> [uploads-YYYYmmdd-HHMMSS.tar.gz]" >&2
@@ -28,7 +30,7 @@ fi
 cd "$APP_DIR"
 
 echo "Restoring $DUMP into the running postgres container..."
-docker compose -f deploy/docker-compose.yml exec -T postgres \
+docker compose -f "$COMPOSE_FILE" exec -T postgres \
   sh -c 'pg_restore --clean --if-exists --exit-on-error -U "${POSTGRES_USER:-bahraini28}" -d "${POSTGRES_DB:-bahraini28}"' \
   < "$DUMP"
 echo "Database restore OK."
@@ -56,5 +58,5 @@ else
 fi
 
 echo "Restart the backend so it reconnects cleanly:"
-echo "  docker compose -f deploy/docker-compose.yml restart backend"
+echo "  docker compose -f $COMPOSE_FILE restart backend"
 

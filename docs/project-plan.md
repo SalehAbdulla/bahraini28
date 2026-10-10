@@ -295,6 +295,16 @@ or any Docker host. Full artifacts in `deploy/`, run guide in `README.md`:
   FastAPI backend (uploads volume, single uvicorn worker for the in-process
   SSE bus), one-shot frontend builder, **Caddy** (auto-renewing TLS, serves
   SPA, proxies `/api`, `/uploads`, `/health`).
+- **Co-hosting** — run this stack as a *tenant* behind another reverse proxy
+  that already owns `:80`/`:443` (e.g. beyond's nginx on a shared VPS):
+  `deploy/docker-compose.cohost.yml` (no host ports; Caddy joins `beyond-prod`
+  as `bahraini28-web`; log caps + memory limits on every service),
+  `deploy/Caddyfile.cohost` (HTTP-only site), `deploy/nginx-bahraini28.conf`
+  (edge vhost with an SSE-safe location and its own cert filenames), and
+  `deploy/certbot-deploy-hook.sh` (copies a renewed cert into the edge and
+  reloads it). Set `BAHRAINI28_COMPOSE=deploy/docker-compose.cohost.yml` so
+  `backup.sh`/`restore.sh` address the right stack. See the README's
+  "Co-hosting on a shared VPS" section.
 - `deploy/deploy.sh` — one-command deploy + smoke path; `backup.sh` +
   `offsite-backup.sh` (rclone → object storage, config `deploy/offsite.env` and
   the Oracle Object Storage free-tier remote in `deploy/rclone-oci.conf.example`) /

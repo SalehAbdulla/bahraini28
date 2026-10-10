@@ -1,0 +1,129 @@
+# Bahraini 28 — co-hosted stack (a tenant behind beyond's nginx on the same VPS).
+#
+# Use this INSTEAD OF deploy/docker-compose.yml when the host already runs
+# beyond's reverse proxy (`beyond-nginx`), which owns :80/:443.
+#
+#   cd /opt/bahraini28
+#   docker compose -f deploy/docker-compose.cohost.yml up -d --build
+#
+# This is a COMPLETE file, not a `-f base -f override` pair, on purpose: Compose
+# *concatenates* `ports` across -f files, so an override could never remove the
+# base file's 80/443 publish — the edge would then collide with us.
+#
+# What differs from the standalone stack:
+#   * Caddy publishes NO host ports — beyond-nginx is the only public entrypoint.
+#   * Caddy joins beyond's `beyond-prod` network under the unique alias
+#     `bahraini28-web`; the edge vhost proxies bahraini28.com to it (HTTP only).
+#   * TLS is terminated at the edge, so Caddy serves plain HTTP — Caddyfile.cohost.
+#   * Every service caps its logs. Unbounded json-file logs once filled this
+#     host's root disk and took beyond down, so nothing here may grow forever.
+#   * Memory limits keep bahraini28 from starving its co-tenants.
+#
+# The project name stays `bahraini28`, so the volumes (bahraini28_uploads, ...)
+# and deploy/backup.sh + restore.sh keep working unchanged.
+name: bahraini28
+
+x-logging: &default-logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "3"
+
+services:
+  postgres:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    logging: *default-logging
+    mem_limit: 512m
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-bahraini28}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in deploy/.env}
+      POSTGRES_DB: ${POSTGRES_DB:-bahraini28}
+      # Store/compare timestamps in UTC (TZDateTime keeps everything UTC).
+      TZ: UTC
+      PGTZ: UTC
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-bahraini28} -d ${POSTGRES_DB:-bahraini28}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks: [internal]
+
+  backend:
+    build:
+      context: ../backend
+    restart: unless-stopped
+    logging: *default-logging
+    mem_limit: 512m
+    env_file: .env
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      # Persistent location for uploaded logos + receipts (UPLOAD_DIR=/data/uploads).
+      - uploads:/data/uploads
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health', timeout=3)"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+    networks: [internal]
+
+  frontend:
+    # One-shot builder: compiles the SPA and copies `dist/` into the shared
+    # volume Caddy serves. Never runs as a long-lived service.
+    build:
+      context: ../frontend
+    restart: "no"
+    logging: *default-logging
+    mem_limit: 512m
+    command: ["sh", "-c", "cp -r /dist/. /out/ && echo 'frontend dist copied to volume'"]
+    volumes:
+      - dist_data:/out
+    networks: [internal]
+
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    logging: *default-logging
+    mem_limit: 128m
+    # NO `ports:` — beyond-nginx owns :80/:443 on this host. Public traffic
+    # arrives through the edge vhost on the shared `beyond-prod` network.
+    volumes:
+      - ./Caddyfile.cohost:/etc/caddy/Caddyfile:ro
+      - dist_data:/srv:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      backend:
+        condition: service_healthy
+      frontend:
+        condition: service_completed_successfully
+    networks:
+      internal:
+      beyond-prod:
+        # Unique alias the edge vhost proxies bahraini28.com to. Never expose a
+        # bare `backend`/`frontend` alias here: beyond has a service literally
+        # named `backend`, so the plain name would be ambiguous on this network.
+        aliases:
+          - bahraini28-web
+
+volumes:
+  # DB data survives container restarts/recreates; back it up with deploy/backup.sh
+  pgdata:
+  # Logos + receipts survive restarts/recreates (name: bahraini28_uploads).
+  uploads:
+  dist_data:
+  caddy_data:
+  caddy_config:
+
+networks:
+  internal:
+    driver: bridge
+  # beyond's network (docker-compose.prod.yml sets `default.name: beyond-prod`).
+  # It must already exist — bring beyond up once before this stack.
+  beyond-prod:
+    external: true
