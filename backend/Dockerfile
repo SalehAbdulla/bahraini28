@@ -22,6 +22,9 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 COPY app ./app
 COPY scripts ./scripts
+# `scripts/seed_areas.py` reads data/bahrain_areas.csv (tracked in git), so the
+# data dir has to be in the image for the documented seed command to work.
+COPY data ./data
 
 EXPOSE 8000
 
