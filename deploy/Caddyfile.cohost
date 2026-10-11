@@ -13,9 +13,7 @@
 
 :80 {
 	encode zstd gzip
-
 	root * /srv
-	try_files {path} /index.html
 
 	header {
 		X-Content-Type-Options "nosniff"
@@ -24,9 +22,23 @@
 		-X-Server
 	}
 
-	# FastAPI backend (health probe, REST API, uploads, SSE feed).
-	# Caddy flushes streaming responses, so the admin SSE feed passes through.
-	reverse_proxy /health backend:8000
-	reverse_proxy /api/* backend:8000
-	reverse_proxy /uploads/* backend:8000
+	# API + uploads first. `handle` blocks are mutually exclusive and evaluated
+	# in the order written, so try_files can never rewrite an /api path to
+	# /index.html (Caddy's fixed directive order puts try_files *before*
+	# reverse_proxy, which would otherwise break every API call).
+	handle /health {
+		reverse_proxy backend:8000
+	}
+	handle /api/* {
+		reverse_proxy backend:8000
+	}
+	handle /uploads/* {
+		reverse_proxy backend:8000
+	}
+	# Everything else is the SPA. `file_server` is required — `root` + try_files
+	# alone serve nothing (Caddy answers 200 with an empty body).
+	handle {
+		try_files {path} /index.html
+		file_server
+	}
 }
