@@ -6,9 +6,14 @@
 # one (Redis pub/sub) — same API surface.
 FROM python:3.14-slim
 
+# PYTHONPATH=/srv so `python scripts/<name>.py` can `import app`: uvicorn inserts
+# "." on sys.path itself, but a plain `python path/to/script.py` puts the
+# *script's* directory there instead of the working directory — without this the
+# seed/migration scripts fail with ModuleNotFoundError: No module named 'app'.
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
-    PIP_NO_CACHE_DIR=1
+    PIP_NO_CACHE_DIR=1 \
+    PYTHONPATH=/srv
 
 WORKDIR /srv
 
