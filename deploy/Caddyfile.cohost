@@ -1,4 +1,4 @@
-# Bahraini 28 — Caddy v2 configuration for the CO-HOSTED deploy.
+# Bahraini 28 - Caddy v2 configuration for the CO-HOSTED deploy.
 #
 # Unlike deploy/Caddyfile this one does NOT do ACME. beyond-nginx terminates TLS
 # for bahraini28.com and proxies here over the shared `beyond-prod` network, so
@@ -35,7 +35,7 @@
 	handle /uploads/* {
 		reverse_proxy backend:8000
 	}
-	# Everything else is the SPA. `file_server` is required — `root` + try_files
+	# Everything else is the SPA. `file_server` is required - `root` + try_files
 	# alone serve nothing (Caddy answers 200 with an empty body).
 	handle {
 		try_files {path} /index.html

@@ -47,7 +47,7 @@ class NotificationBus:
                 try:
                     queue.get_nowait()
                     queue.put_nowait(payload)
-                except Exception:  # pragma: no cover — defensive
+                except Exception:  # pragma: no cover - defensive
                     pass
 
     async def on_connect_greeting(self, queue: asyncio.Queue[str]) -> None:

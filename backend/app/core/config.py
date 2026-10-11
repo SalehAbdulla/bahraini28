@@ -47,7 +47,7 @@ class Settings(BaseSettings):
     DAILY_LIMIT_TOTAL: int = 8
     # Fallback invoice-number pattern (regex, full match) used when a partner
     # has no ``invoice_pattern`` of its own. 3-64 chars of letters/digits,
-    # optionally separated by ``- / _ .`` — rejects junk such as "!!!" or "  ".
+    # optionally separated by ``- / _ .`` - rejects junk such as "!!!" or "  ".
     INVOICE_DEFAULT_PATTERN: str = r"[A-Za-z0-9][A-Za-z0-9\-/_.]{2,63}"
     # Publish an admin fraud signal once a volunteer credits this many
     # *distinct* businesses in a single day.
@@ -55,7 +55,7 @@ class Settings(BaseSettings):
 
     # --- Tier 2: receipt proof + admin approval ----------------------------
     # When True (the default) a submission is stored as ``pending`` and the
-    # reward is credited only once an admin approves it — the volunteer must
+    # reward is credited only once an admin approves it - the volunteer must
     # attach a photo/PDF of the physical receipt. When False the deployment
     # falls back to the Tier 1 behaviour: the receipt is optional and the
     # reward is credited immediately, so a pre-onboarding deployment (or an

@@ -23,7 +23,7 @@ class User(Base):
     name: Mapped[str] = mapped_column(String(120), nullable=False)
     phone: Mapped[str | None] = mapped_column(String(30), nullable=True)
     password_hash: Mapped[str] = mapped_column(String(255), nullable=False)
-    # Membership validity — access is blocked after this date.
+    # Membership validity - access is blocked after this date.
     expiry_date: Mapped[datetime] = mapped_column(TZDateTime(), nullable=False)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
     # Forces the first-login "profile activation" flow.

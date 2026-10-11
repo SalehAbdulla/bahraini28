@@ -1,12 +1,12 @@
-"""Invoice-code service (anti-fraud Tier 3) — issue batches, move the lifecycle.
+"""Invoice-code service (anti-fraud Tier 3) - issue batches, move the lifecycle.
 
 This is the whole surface behind "a fabricated number simply never matches an
 unused code":
 
-* :func:`create_batch` — an admin mints N single-use codes for one partner;
-* :func:`list_codes` / :func:`code_stats` — the admin reconciliation view;
-* :func:`revoke_code` — cancel a code that was never handed out;
-* :func:`claim_for_submission` / :func:`redeem` / :func:`release` — the lifecycle
+* :func:`create_batch` - an admin mints N single-use codes for one partner;
+* :func:`list_codes` / :func:`code_stats` - the admin reconciliation view;
+* :func:`revoke_code` - cancel a code that was never handed out;
+* :func:`claim_for_submission` / :func:`redeem` / :func:`release` - the lifecycle
   hooks the transaction service drives.
 
 Claiming/redeeming/releasing deliberately do **not** commit: they are part of the
@@ -34,12 +34,12 @@ from app.models.invoice_code import (
     CODE_REVOKED,
 )
 
-#: Ambiguity-free alphabet: no 0/O, 1/I/L — these codes are read off a paper
+#: Ambiguity-free alphabet: no 0/O, 1/I/L - these codes are read off a paper
 #: receipt and retyped by a volunteer.
 CODE_ALPHABET = "23456789ABCDEFGHJKMNPQRSTUVWXYZ"
 #: Shared, recognisable prefix so "this is a Bahraini 28 code" is obvious.
 CODE_PREFIX = "B28"
-#: ``B28-XXXX-XXXX`` — two groups of four characters (~40 bits of entropy).
+#: ``B28-XXXX-XXXX`` - two groups of four characters (~40 bits of entropy).
 _GROUP_SIZE = 4
 _GROUP_COUNT = 2
 #: Largest batch an admin may mint in a single request.
@@ -211,7 +211,7 @@ def claim_for_submission(
 
 
 def redeem(db: Session, code: InvoiceCode) -> InvoiceCode:
-    """Mark a claimed code as spent — the reward it proved has been credited."""
+    """Mark a claimed code as spent - the reward it proved has been credited."""
     code.status = CODE_REDEEMED
     code.redeemed_at = datetime.now(timezone.utc)
     db.add(code)

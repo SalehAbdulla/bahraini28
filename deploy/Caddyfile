@@ -1,4 +1,4 @@
-# Bahraini 28 — Caddy v2 configuration.
+# Bahraini 28 - Caddy v2 configuration.
 #
 # - Serves the built SPA from the shared `dist_data` volume (mounted at /srv)
 # - Proxies /api, /uploads and the SSE admin notification feed to the backend
@@ -33,7 +33,7 @@
 	handle /uploads/* {
 		reverse_proxy backend:8000
 	}
-	# Everything else is the SPA. `file_server` is required — `root` + try_files
+	# Everything else is the SPA. `file_server` is required - `root` + try_files
 	# alone serve nothing (Caddy answers 200 with an empty body).
 	handle {
 		try_files {path} /index.html

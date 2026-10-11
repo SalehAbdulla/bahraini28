@@ -2,7 +2,7 @@
 
 An admin issues a *batch* of codes to one partner; every code is single-use and
 bound to that partner. The volunteer quotes the code printed on their receipt, so
-a fabricated number can never match an unused code — the one control that makes
+a fabricated number can never match an unused code - the one control that makes
 invoicing *provable* rather than merely plausible.
 
 Lifecycle::
@@ -13,7 +13,7 @@ Lifecycle::
 
 * ``claimed`` reserves the code while the submission sits in the review queue,
   so the same code cannot back two submissions at once.
-* ``redeemed`` is terminal — a code that earned a reward can never be reused.
+* ``redeemed`` is terminal - a code that earned a reward can never be reused.
 * A **rejected** submission releases its code back to ``issued``: an honest
   mistake (a blurry photo) must not burn the volunteer's only code.
 * ``revoked`` lets an admin cancel a code that was never handed out.
@@ -63,7 +63,7 @@ class InvoiceCode(Base):
     #: Optional admin label, so a printed sheet can be traced back to a batch.
     batch: Mapped[str | None] = mapped_column(String(60), nullable=True)
     #: Admin who generated the code (kept nullable so the row survives an admin
-    #: being removed — the audit value is the timestamp, not the link).
+    #: being removed - the audit value is the timestamp, not the link).
     created_by: Mapped[int | None] = mapped_column(
         ForeignKey("admins.id", ondelete="SET NULL"), nullable=True
     )

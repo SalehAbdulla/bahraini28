@@ -1,13 +1,13 @@
 """Admin credential tests: self-service rotation + the ops recovery script.
 
 The deployment runbook tells operators to *"change the admin password"* before
-setting ``SEED_DEFAULT_ADMIN=false`` — but ``POST /auth/change-password`` is a
+setting ``SEED_DEFAULT_ADMIN=false`` - but ``POST /auth/change-password`` is a
 volunteer route (an admin token is rejected) and the admin API only resets a
 **volunteer's** password. These tests cover the two paths that make the
 instruction achievable:
 
 1. an admin rotating their own password from the dashboard (current one required);
-2. ``scripts/set_admin_password.py`` — the first rotation and lost-password
+2. ``scripts/set_admin_password.py`` - the first rotation and lost-password
    recovery, plus the CLI's password resolution (flag → env → hidden prompt).
 """
 from __future__ import annotations

@@ -2,7 +2,7 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Single source of truth for corner radius — sharp everywhere (0). */
+/* Single source of truth for corner radius - sharp everywhere (0). */
 :root {
   --radius: 0;
 }

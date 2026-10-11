@@ -1,14 +1,14 @@
 #!/usr/bin/env bash
 set -euo pipefail
 # ---------------------------------------------------------------------------
-# Bahraini 28 — copy the renewed bahraini28.com certificate into beyond's nginx
+# Bahraini 28 - copy the renewed bahraini28.com certificate into beyond's nginx
 # mount and reload it.
 #
 # Install on the VPS as:
 #   /etc/letsencrypt/renewal-hooks/deploy/bahraini28-nginx.sh   (root, +x)
 #
-# Deploy hooks are GLOBAL — this runs on every renewal, including beyond's and the
-# social network's — so it exits quietly when our certificate is absent and never
+# Deploy hooks are GLOBAL - this runs on every renewal, including beyond's and the
+# social network's - so it exits quietly when our certificate is absent and never
 # writes beyond's own fullchain.pem / privkey.pem.
 # ---------------------------------------------------------------------------
 

@@ -15,7 +15,7 @@ asserts the migration:
 
 The legacy schema is emitted in the dialect of the engine under test, and that
 engine follows ``TEST_DATABASE_URL`` (see ``tests/conftest.py``). The same tests
-therefore run on SQLite locally *and* on PostgreSQL in CI — which matters,
+therefore run on SQLite locally *and* on PostgreSQL in CI - which matters,
 because the two backends take different branches of every ``if dialect`` in
 ``app/db/bootstrap.py`` (``DROP CONSTRAINT`` vs ``DROP INDEX``, ``TIMESTAMPTZ``
 vs ``DATETIME``, ``BOOLEAN NOT NULL DEFAULT false`` vs ``… DEFAULT 0``), and
@@ -42,7 +42,7 @@ def _legacy_ddl(dialect: str) -> list[str]:
     Types are dialect-correct. PostgreSQL needs ``SERIAL`` (the tests insert
     rows without an explicit id) and ``TIMESTAMPTZ``: the real legacy database
     was built by ``create_all`` with ``TZDateTime``, so its timestamps are
-    timezone-aware — and the Tier 2 backfill copies ``created_at`` straight into
+    timezone-aware - and the Tier 2 backfill copies ``created_at`` straight into
     the new ``reviewed_at`` column, which only compares equal if both sides
     carry the timezone.
     """
@@ -136,7 +136,7 @@ def legacy_engine_with_related(legacy_engine):
 def _require_postgres(engine) -> None:
     """Skip unless the suite is pointed at PostgreSQL."""
     if engine.dialect.name != "postgresql":
-        pytest.skip("PostgreSQL-only branch — run with TEST_DATABASE_URL set")
+        pytest.skip("PostgreSQL-only branch - run with TEST_DATABASE_URL set")
 
 
 def _names(engine, table: str) -> set[str]:
@@ -171,7 +171,7 @@ def test_reconcile_widens_invoice_uniqueness(legacy_engine):
     reconcile_schema(legacy_engine)
 
     # Both backends end up enforcing the widened rule; they just report it
-    # differently — a unique *constraint* on PostgreSQL, a unique *index* on
+    # differently - a unique *constraint* on PostgreSQL, a unique *index* on
     # SQLite (which cannot alter an existing table constraint).
     assert "uq_business_invoice" in _names(legacy_engine, "transactions")
     constraints = {
@@ -198,7 +198,7 @@ def test_reconcile_makes_invoice_unique_across_users(legacy_engine):
         )
 
     # A *different* user submitting the same invoice at the same partner must
-    # now be rejected — this was the receipt-sharing hole.
+    # now be rejected - this was the receipt-sharing hole.
     with pytest.raises(Exception):
         with legacy_engine.begin() as conn:
             conn.execute(
@@ -230,7 +230,7 @@ REVIEW_COLUMNS = {
 
 
 def test_reconcile_adds_review_columns_and_backfills_legacy_rows(legacy_engine):
-    """Pre-Tier-2 rows were credited instantly — they must stay ``approved``."""
+    """Pre-Tier-2 rows were credited instantly - they must stay ``approved``."""
     with legacy_engine.begin() as conn:
         conn.execute(
             text(
@@ -424,7 +424,7 @@ def test_migration_runs_with_related_tables_on_every_dialect(legacy_engine_with_
     """The ``REFERENCES … ON DELETE SET NULL`` DDL must be valid on both backends.
 
     This is the branch that only fires when ``admins`` / ``invoice_codes``
-    already exist — i.e. exactly the state of a real pre-Tier-3 database.
+    already exist - i.e. exactly the state of a real pre-Tier-3 database.
     """
     reconcile_schema(legacy_engine_with_related)
 

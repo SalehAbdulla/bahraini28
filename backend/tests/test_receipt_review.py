@@ -34,7 +34,7 @@ RECEIPT_BYTES = b"\x89PNG\r\n\x1a\n" + b"\x00" * 32
 
 
 def submit(client, token, business_id, invoice, payload=RECEIPT_BYTES, extra=None):
-    """Multipart submission — the shape the volunteer UI now posts."""
+    """Multipart submission - the shape the volunteer UI now posts."""
     files = None
     if payload is not None:
         files = {"receipt": ("receipt.png", payload, "image/png")}
@@ -73,7 +73,7 @@ def test_oversized_receipt_is_rejected(review_client, review_db):
     """The server cap is the backstop; an oversized receipt is a clean 413.
 
     The volunteer UI downscales photos before upload, so this only fires for an
-    un-resized image or an oversized PDF — it must not write a partial file or
+    un-resized image or an oversized PDF - it must not write a partial file or
     credit anything.
     """
     _, token = user_token(review_client, review_db)
@@ -88,7 +88,7 @@ def test_receipt_within_the_cap_is_accepted(review_client, review_db):
     """A phone-sized photo (well past the old 2 MB ceiling) must be accepted.
 
     Guards the lift of ``MAX_UPLOAD_SIZE_MB``: the browser shrinks most photos,
-    but an un-resized image — or a PDF, which is never resized — still has to
+    but an un-resized image - or a PDF, which is never resized - still has to
     fit, so this fails if the cap creeps back down to 2.
     """
     _, token = user_token(review_client, review_db, email="big-upload@example.com")
@@ -131,7 +131,7 @@ def test_submission_with_receipt_is_pending_and_credits_nothing(review_client, r
     assert me["reward_points"] == 0  # nothing spendable yet
     assert me["pending_reward_points"] == 1
 
-    # The admin queue exposes an admin-only receipt URL — never the public
+    # The admin queue exposes an admin-only receipt URL - never the public
     # /uploads path (which cannot serve it; see the privacy tests below).
     queue = review_client.get(
         "/api/v1/admin/transactions/review", headers=admin_headers(review_client)
@@ -200,7 +200,7 @@ def test_reject_keeps_balance_and_stores_reason(review_client, review_db):
     assert me["reward_points"] == 0
     assert me["pending_reward_points"] == 0
 
-    # The volunteer is told why — on their *own* history only.
+    # The volunteer is told why - on their *own* history only.
     history = review_client.get(
         "/api/v1/users/me/transactions", headers=auth_headers(token)
     ).json()
@@ -230,7 +230,7 @@ def test_decided_submission_cannot_be_reviewed_again(review_client, review_db):
     assert second.status_code == 409
     assert second.json()["code"] == "transaction_not_pending"
 
-    # Rejecting an approved row is refused too — the reward stays intact.
+    # Rejecting an approved row is refused too - the reward stays intact.
     third = review_client.post(
         f"/api/v1/admin/transactions/{tx_id}/reject", headers=headers, json={}
     )
@@ -338,7 +338,7 @@ def test_a_receipt_is_not_served_publicly(review_client, review_db):
     """The receipt must not be readable from the public /uploads route.
 
     Only business logos are public there. A receipt has no matching
-    ``logo_path``, so a leaked receipt URL is a 404 — while the admin route
+    ``logo_path``, so a leaked receipt URL is a 404 - while the admin route
     serves the very same bytes to a signed-in admin.
     """
     _, token = user_token(review_client, review_db)

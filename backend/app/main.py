@@ -85,7 +85,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.include_router(transactions.router, prefix=settings.API_PREFIX)
     app.include_router(notifications.router, prefix=settings.API_PREFIX)
     app.include_router(admin.router, prefix=settings.API_PREFIX)
-    # Public logo serving — outside the API prefix (the SPA loads /uploads/<file>).
+    # Public logo serving - outside the API prefix (the SPA loads /uploads/<file>).
     app.include_router(uploads.router)
 
     # --- health check ----------------------------------------------------------

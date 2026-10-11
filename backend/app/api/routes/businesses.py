@@ -88,8 +88,8 @@ def list_areas(db: DbSession):
 
 @router.get("/{business_id}", response_model=BusinessDetail)
 def business_detail(business_id: int, db: DbSession, user: OptionalUser):
-    """Detail view: logo, branch areas, partnership status and — for a valid
-    logged-in member only — the exact discount and the offer wording.
+    """Detail view: logo, branch areas, partnership status and - for a valid
+    logged-in member only - the exact discount and the offer wording.
 
     The member benefit is redacted for anonymous callers (see
     :func:`list_businesses`); everything else needed to find the shop stays

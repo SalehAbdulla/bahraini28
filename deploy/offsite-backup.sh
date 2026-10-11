@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 # ---------------------------------------------------------------------------
-# Bahraini 28 — copy the backups OFF this host (object storage).
+# Bahraini 28 - copy the backups OFF this host (object storage).
 #
 # deploy/backup.sh writes the PostgreSQL dump and the uploads archive to
 # BACKUP_DIR *on this machine*. If the VPS is lost, so is every backup of it,
@@ -18,7 +18,7 @@ set -euo pipefail
 # Usage:
 #   ./offsite-backup.sh [--dry-run]
 #
-# Configuration — deploy/offsite.env (copy the .example), or the environment:
+# Configuration - deploy/offsite.env (copy the .example), or the environment:
 #   OFFSITE_REMOTE=oci:bahraini28-backups    # ANY rclone destination
 #   RCLONE_CONFIG=/root/.config/rclone/rclone.conf   # optional
 #
@@ -69,7 +69,7 @@ die() {
   exit 1
 }
 
-# `date -Is` is a GNU extension — BSD/macOS `date` rejects it and prints an error
+# `date -Is` is a GNU extension - BSD/macOS `date` rejects it and prints an error
 # instead of a timestamp. Build the ISO-8601 UTC stamp from the portable form.
 iso8601() { date -u +%Y-%m-%dT%H:%M:%SZ; }
 
@@ -81,7 +81,7 @@ command -v rclone >/dev/null 2>&1 || die \
 
 [ -n "$OFFSITE_REMOTE" ] || die \
   "OFFSITE_REMOTE is not set. Copy deploy/offsite.env.example to
-         deploy/offsite.env and point it at your bucket — without it the
+         deploy/offsite.env and point it at your bucket - without it the
          backups never leave this host."
 
 [ -d "$BACKUP_DIR" ] || die \
@@ -117,7 +117,7 @@ if ! rclone "${rclone_args[@]}"; then
 fi
 
 if [ "$DRY_RUN" = 1 ]; then
-  echo "[$(iso8601)] Dry run complete — nothing was uploaded."
+  echo "[$(iso8601)] Dry run complete - nothing was uploaded."
 else
   echo "[$(iso8601)] Off-site copy complete ($OFFSITE_REMOTE)"
 fi

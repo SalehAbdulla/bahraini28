@@ -1,4 +1,4 @@
-# Bahraini 28 — production stack: PostgreSQL + FastAPI backend + Caddy.
+# Bahraini 28 - production stack: PostgreSQL + FastAPI backend + Caddy.
 #
 # Caddy terminates TLS (auto-renewing certs), serves the built frontend and
 # proxies /api, /uploads and the SSE admin feed to the backend.

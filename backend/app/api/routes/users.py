@@ -92,7 +92,7 @@ def _tx_page(
                 reward_increment=t.reward_increment,
                 created_at=t.created_at,
                 # The volunteer is told *why* a receipt was rejected (their own
-                # history only — the public per-business list omits the reason).
+                # history only - the public per-business list omits the reason).
                 status=t.status,
                 rejection_reason=t.rejection_reason,
             )

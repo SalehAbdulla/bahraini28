@@ -1,7 +1,7 @@
-# Bahraini 28 — ready-made rclone remote for Oracle Object Storage (OCI).
+# Bahraini 28 - ready-made rclone remote for Oracle Object Storage (OCI).
 # ---------------------------------------------------------------------------
 # The photos (receipts + logos) live on the VM's `uploads` volume; this remote
-# is what carries their nightly archive AND the database dump *off* the box —
+# is what carries their nightly archive AND the database dump *off* the box -
 # see deploy/offsite-backup.sh. Oracle's Always Free tier includes object
 # storage, so this costs nothing and keeps the data in-region.
 #
@@ -14,15 +14,15 @@
 # Then in deploy/offsite.env:  OFFSITE_REMOTE=oci:bahraini28-backups
 #
 # The remote is called "oci" and the bucket is "bahraini28-backups", so the
-# destination is `oci:bahraini28-backups`. The *name* is arbitrary — rclone
-# dispatches on `type`, not the name — so any of the three blocks below works
+# destination is `oci:bahraini28-backups`. The *name* is arbitrary - rclone
+# dispatches on `type`, not the name - so any of the three blocks below works
 # under the same OFFSITE_REMOTE.
 #
 # KEEP EXACTLY ONE [oci] BLOCK. Uncomment the one you want and delete the rest;
 # two sections with the same name make the file invalid.
 # ---------------------------------------------------------------------------
 
-# --- Option A — recommended on an OCI VM: instance principal (no keys on disk)
+# --- Option A - recommended on an OCI VM: instance principal (no keys on disk)
 # The instance authenticates with its own identity (certificates read from
 # instance metadata), so there is no long-lived API key to leak or rotate.
 # Requires the instance to be in a dynamic group, with a policy like:
@@ -37,7 +37,7 @@ namespace = <object-storage-namespace>
 compartment = <compartment-ocid>
 region = <region>
 
-# --- Option B — an OCI user + API key, read from the OCI SDK config file
+# --- Option B - an OCI user + API key, read from the OCI SDK config file
 # Put your tenancy OCID, user OCID, fingerprint and the private-key path in
 # ~/.oci/config (https://docs.oracle.com/en-us/iaas/Content/API/Concepts/sdkconfig.htm),
 # then point rclone at it with `config_file`.
@@ -50,7 +50,7 @@ region = <region>
 # region = <region>
 # config_file = /root/.oci/config
 
-# --- Option C — the S3-compatible API (OCI "Customer Secret Keys")
+# --- Option C - the S3-compatible API (OCI "Customer Secret Keys")
 # Easiest to set up (Console → your user → Customer Secret Keys) but it stores a
 # long-lived access key on the host. The endpoint embeds your namespace.
 #
@@ -69,6 +69,6 @@ region = <region>
 #   sudo rclone copy /var/backups/bahraini28 oci:bahraini28-backups \
 #     --include 'bahraini28-*.pgdump' --include 'uploads-*.tar.gz' --dry-run
 #
-# Retention lives on the bucket, not here — set a lifecycle rule (e.g. keep
+# Retention lives on the bucket, not here - set a lifecycle rule (e.g. keep
 # dailies 30 days, monthlies 12 months) and enable object versioning so a
 # compromised host cannot wipe the history it is backing up.

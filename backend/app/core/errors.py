@@ -39,7 +39,7 @@ class InvalidTokenError(AppError):
 class SessionInvalidatedError(AppError):
     status_code = 401
     code = "session_invalidated"
-    message = "Session invalidated — please log in again."
+    message = "Session invalidated - please log in again."
 
 
 class MembershipExpiredError(AppError):

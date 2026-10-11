@@ -1,9 +1,9 @@
-"""Transaction model — an invoice submission that earns a reward after review.
+"""Transaction model - an invoice submission that earns a reward after review.
 
 Two rules live here:
 
 * **Tier 1 (anti-fraud):** an invoice number can only ever be credited once per
-  business — *by anyone* — so a receipt cannot be shared across accounts.
+  business - *by anyone* - so a receipt cannot be shared across accounts.
 * **Tier 2 (proof):** a submission carries the receipt evidence and moves
   ``pending → approved | rejected``. ``reward_points`` is only credited on
   approval, so ``status`` is what decides whether a row is spendable.
@@ -27,7 +27,7 @@ from app.db.types import TZDateTime
 STATUS_PENDING = "pending"
 STATUS_APPROVED = "approved"
 STATUS_REJECTED = "rejected"
-#: Statuses that still occupy a daily-cap slot — a queued submission must not
+#: Statuses that still occupy a daily-cap slot - a queued submission must not
 #: bypass the caps by sitting unreviewed, while a *rejected* one must not
 #: punish a volunteer for an honest mistake.
 COUNTED_STATUSES = (STATUS_PENDING, STATUS_APPROVED)
@@ -40,7 +40,7 @@ def _utcnow() -> datetime:
 class Transaction(Base):
     __tablename__ = "transactions"
     __table_args__ = (
-        # An invoice may only ever be credited ONCE per business — by anyone.
+        # An invoice may only ever be credited ONCE per business - by anyone.
         # Scoping this to (user_id, business_id, invoice) was the fraud hole:
         # a receipt could be shared across accounts, and fabricated numbers
         # were accepted outright.
@@ -67,7 +67,7 @@ class Transaction(Base):
     )
     #: Public URL of the uploaded receipt (``/uploads/r<business>-<uuid>.jpg``).
     receipt_path: Mapped[str | None] = mapped_column(String(255), nullable=True)
-    #: SHA-256 of the receipt bytes — a second receipt image for the same
+    #: SHA-256 of the receipt bytes - a second receipt image for the same
     #: partner is rejected, so one photo cannot be recycled for many credits.
     receipt_sha256: Mapped[str | None] = mapped_column(String(64), index=True, nullable=True)
     reviewed_by: Mapped[int | None] = mapped_column(
@@ -78,8 +78,8 @@ class Transaction(Base):
 
     # --- Tier 3: single-use merchant receipt code ----------------------------
     #: The one-time code this submission spent (``None`` when the partner does
-    #: not require codes). Kept ``SET NULL`` so the transaction — and the reward
-    #: it earned — survives the code row being cleaned up.
+    #: not require codes). Kept ``SET NULL`` so the transaction - and the reward
+    #: it earned - survives the code row being cleaned up.
     code_id: Mapped[int | None] = mapped_column(
         ForeignKey("invoice_codes.id", ondelete="SET NULL"), index=True, nullable=True
     )

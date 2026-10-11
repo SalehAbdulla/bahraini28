@@ -68,7 +68,7 @@ export default function Login() {
           Login with your email or CPR number.
         </p>
         <div className="mt-4 text-xs font-semibold text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
-          🔒 Volunteer Members Only — access is validated against your
+          🔒 Volunteer Members Only - access is validated against your
           membership expiry date.
         </div>
         <form onSubmit={submitLogin} className="mt-6 space-y-4" noValidate>

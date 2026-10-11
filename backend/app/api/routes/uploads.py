@@ -1,8 +1,8 @@
-"""Public upload serving — business logos only.
+"""Public upload serving - business logos only.
 
 Logos are meant to be public: the directory and partner pages load them
 straight from ``/uploads/<file>``. Invoice receipts share the same directory but
-are **not** public — ``GET /uploads/<file>`` answers 404 for anything no partner
+are **not** public - ``GET /uploads/<file>`` answers 404 for anything no partner
 uses as a logo, so a leaked receipt URL is inert. Receipts are served to admins
 only, from ``/api/v1/admin/receipts/<file>`` (see ``routes/admin.py``).
 
@@ -25,7 +25,7 @@ router = APIRouter(tags=["Uploads"])
 
 
 def _not_found() -> HTTPException:
-    """A fresh 404 — reusing one instance would accumulate tracebacks."""
+    """A fresh 404 - reusing one instance would accumulate tracebacks."""
     return HTTPException(status_code=404, detail="Not found")
 
 

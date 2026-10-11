@@ -7,7 +7,7 @@ Usage (from the backend/ directory):
 Requires ``SEED_DEFAULT_ADMIN`` (the app already creates the initial admin on
 startup when enabled); this script adds sample categories, areas, businesses,
 a demo volunteer account, and a batch of single-use receipt codes for the
-partner that requires them (anti-fraud Tier 3) — so the code-required flow is
+partner that requires them (anti-fraud Tier 3) - so the code-required flow is
 visible on a fresh demo run.
 
 Every step is idempotent: a row matched on its natural key is left untouched, and
@@ -138,7 +138,7 @@ def seed() -> None:
                     description=spec["desc"],
                     is_active=True,
                     expiry_date=_tznow(365),
-                    # Tier 3 opt-in — absent from every partner but Zaytoun.
+                    # Tier 3 opt-in - absent from every partner but Zaytoun.
                     codes_required=spec.get("codes_required", False),
                 )
                 db.add(business)
@@ -202,7 +202,7 @@ def seed() -> None:
     print("Seed complete. Demo login:")
     print("  User : volunteer@example.com / volunteer123")
     print("  Admin: admin / admin123")
-    print("  Tier 3: Zaytoun Grocers requires a receipt code — issue and print")
+    print("  Tier 3: Zaytoun Grocers requires a receipt code - issue and print")
     print("          codes at /admin/businesses/<id>/codes")
 
 

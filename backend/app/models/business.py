@@ -36,7 +36,7 @@ class Business(Base):
     # Opt-in per partner, because Tier 3 depends on the merchant printing codes.
     codes_required: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
-    # Partnership validity — bookings stop after this date.
+    # Partnership validity - bookings stop after this date.
     expiry_date: Mapped[datetime] = mapped_column(TZDateTime(), nullable=False)
 
     category_id: Mapped[int] = mapped_column(ForeignKey("categories.id"), index=True, nullable=False)

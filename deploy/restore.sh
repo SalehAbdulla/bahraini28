@@ -1,13 +1,13 @@
 #!/usr/bin/env bash
 set -euo pipefail
 # ---------------------------------------------------------------------------
-# Bahraini 28 — restore a backup produced by deploy/backup.sh into the stack.
+# Bahraini 28 - restore a backup produced by deploy/backup.sh into the stack.
 #
 # Usage:
 #   sudo ./restore.sh <backup.pgdump> [uploads-YYYYmmdd-HHMMSS.tar.gz]
 #
 # The database dump is required. The matching uploads archive restores the
-# receipts and business logos into the `uploads` volume — without it every
+# receipts and business logos into the `uploads` volume - without it every
 # `transactions.receipt_path` (and `businesses.logo_path`) points at a file
 # that no longer exists, so a database-only restore is a *lossy* restore.
 #
@@ -52,7 +52,7 @@ if [ -n "$UPLOADS" ]; then
     tar xzf "/backup/$(basename "$UPLOADS")" -C /data
   echo "Uploads restore OK (receipts + logos)."
 else
-  echo "WARNING: no uploads archive given — receipts and logos will 404."
+  echo "WARNING: no uploads archive given - receipts and logos will 404."
   echo "         Re-run with the matching uploads-<stamp>.tar.gz from the same"
   echo "         backup run (the two artifacts share a timestamp)."
 fi

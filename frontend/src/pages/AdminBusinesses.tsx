@@ -271,14 +271,14 @@ export default function AdminBusinesses() {
                       </div>
                     </div>
                   </td>
-                  <td className="px-4 py-2">{b.category_name ?? "—"}</td>
-                  <td className="px-4 py-2 font-semibold text-brand-700">{benefitHeadline(b) ?? "—"}</td>
+                  <td className="px-4 py-2">{b.category_name ?? "-"}</td>
+                  <td className="px-4 py-2 font-semibold text-brand-700">{benefitHeadline(b) ?? "-"}</td>
                   <td className="px-4 py-2 text-slate-500">
                     {b.branches.length
                       ? b.branches
                           .map((br) => br.area_name + (br.branch_name ? ` · ${br.branch_name}` : ""))
                           .join(", ")
-                      : "—"}
+                      : "-"}
                   </td>
                   <td className="px-4 py-2">{fmtDateOnly(b.expiry_date)}</td>
                   <td className="px-4 py-2">
@@ -426,7 +426,7 @@ export default function AdminBusinesses() {
                 </div>
                 <div className="mt-3 space-y-3">
                   {form.branches.length === 0 ? (
-                    <p className="text-sm text-slate-400">No branches — add at least one area so volunteers know where the discount applies.</p>
+                    <p className="text-sm text-slate-400">No branches - add at least one area so volunteers know where the discount applies.</p>
                   ) : (
                     form.branches.map((br, i) => (
                       <div key={i} className="grid sm:grid-cols-[1fr_1.2fr_1.2fr_1fr_auto] gap-2 items-center border border-slate-200 rounded-xl p-3">

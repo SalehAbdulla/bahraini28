@@ -1,7 +1,7 @@
 """Import the real Bahrain areas into the database.
 
-Reads ``backend/data/bahrain_areas.csv`` (``governorate,area``) — derived from
-the organization's official Bahrain address list — and upserts the distinct
+Reads ``backend/data/bahrain_areas.csv`` (``governorate,area``) - derived from
+the organization's official Bahrain address list - and upserts the distinct
 area names into the ``areas`` table.
 
 Idempotent: names are matched case-insensitively and existing areas are left

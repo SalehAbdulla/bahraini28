@@ -137,7 +137,7 @@ export async function apiUpload<T>(
       detail = data?.detail ?? detail;
       code = data?.code;
     } catch {
-      /* non-JSON error body — keep default */
+      /* non-JSON error body - keep default */
     }
     if (res.status === 401 && !opts.admin) {
       setUserToken(null);
@@ -152,7 +152,7 @@ export async function apiUpload<T>(
  * URL. `<img>`/`<a>` cannot attach an Authorization header, so an admin-only
  * file (a receipt) is fetched here and shown through a temporary blob URL.
  *
- * `url` is used as-is — pass the full path the API returned (e.g. `receipt_url`),
+ * `url` is used as-is - pass the full path the API returned (e.g. `receipt_url`),
  * not something relative to the API prefix. The caller owns the returned URL and
  * must `URL.revokeObjectURL` it when done.
  */

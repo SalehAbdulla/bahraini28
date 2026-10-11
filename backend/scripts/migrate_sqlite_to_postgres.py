@@ -23,7 +23,7 @@ from sqlalchemy.types import BigInteger, Integer
 
 from app.core.config import get_settings
 from app.db.base import Base
-# Importing the model modules registers their tables on Base.metadata —
+# Importing the model modules registers their tables on Base.metadata -
 # without this, create_all() and the copy loop would run against nothing.
 from app.models import (  # noqa: F401
     Admin,
@@ -45,7 +45,7 @@ def main() -> None:
 
     source = os.environ.get("SQLITE_SOURCE", "bahraini28.db")
     if not Path(source).exists():
-        print(f"No SQLite file at {source!r} — nothing to migrate.")
+        print(f"No SQLite file at {source!r} - nothing to migrate.")
         return
 
     src_engine = create_engine(f"sqlite:///{source}")

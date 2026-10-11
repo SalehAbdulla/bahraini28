@@ -3,7 +3,7 @@ import type { TransactionStatus } from "../types";
 /**
  * Sharp-cornered status pill for a submission's review lifecycle.
  *
- * Colours come from the existing brand/ink/red tokens — no new palette, and the
+ * Colours come from the existing brand/ink/red tokens - no new palette, and the
  * radius stays 0 via the shared Tailwind radius scale.
  */
 const STATUS_STYLES: Record<TransactionStatus, string> = {

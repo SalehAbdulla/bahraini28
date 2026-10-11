@@ -49,10 +49,10 @@ class BusinessSummary(ORMModel):
     name: str
     logo_url: str | None = None
     category_name: str
-    #: ``None`` for an anonymous caller — the exact benefit is a member-only
+    #: ``None`` for an anonymous caller - the exact benefit is a member-only
     #: reveal (see ``api.routes.businesses``).
     discount_percentage: int | None = None
-    #: Set when the partner's benefit is not a flat percentage — the card then
+    #: Set when the partner's benefit is not a flat percentage - the card then
     #: prints this instead of a "-0%" badge. Also redacted for anonymous callers.
     discount_label: str | None = None
     areas: list[str] = []
@@ -144,7 +144,7 @@ class AdminBusinessCreate(BaseModel):
 
 
 class AdminBusinessUpdate(BaseModel):
-    """All fields optional — omitted fields keep their current value. If
+    """All fields optional - omitted fields keep their current value. If
     ``branches`` is provided (even as an empty list) it replaces the full
     branch list."""
 

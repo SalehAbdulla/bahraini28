@@ -64,7 +64,7 @@ def e2e_tmp_dir(tmp_path_factory) -> Path:
 @pytest.fixture(scope="session")
 def backend_process(e2e_tmp_dir: Path) -> Generator[int, None, None]:
     if not port_free(BACKEND_PORT):
-        pytest.skip(f"port {BACKEND_PORT} busy — set E2E_BACKEND_PORT")
+        pytest.skip(f"port {BACKEND_PORT} busy - set E2E_BACKEND_PORT")
 
     db_path = e2e_tmp_dir / "e2e.db"
     uploads = e2e_tmp_dir / "uploads"
@@ -128,7 +128,7 @@ def backend_process(e2e_tmp_dir: Path) -> Generator[int, None, None]:
 @pytest.fixture(scope="session")
 def frontend_process(backend_process: int, e2e_tmp_dir: Path) -> Generator[int, None, None]:
     if not port_free(FRONTEND_PORT):
-        pytest.skip(f"port {FRONTEND_PORT} busy — set E2E_FRONTEND_PORT")
+        pytest.skip(f"port {FRONTEND_PORT} busy - set E2E_FRONTEND_PORT")
 
     log = open(e2e_tmp_dir / "vite.log", "w")
     proc = subprocess.Popen(
@@ -161,7 +161,7 @@ def frontend_process(backend_process: int, e2e_tmp_dir: Path) -> Generator[int, 
 
 @pytest.fixture(scope="session")
 def browser(frontend_process: int) -> Generator[Any, None, None]:
-    """Chromium driving the real stack — depends on the server fixtures (which
+    """Chromium driving the real stack - depends on the server fixtures (which
     in turn boot the seeded backend on :8000 and vite on :5173)."""
     from playwright.sync_api import sync_playwright
 

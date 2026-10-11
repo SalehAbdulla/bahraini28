@@ -1,4 +1,4 @@
-# Next session — Tier 2: receipt proof + admin approval
+# Next session - Tier 2: receipt proof + admin approval
 
 **Status:** ✅ **shipped.** Tier 1 hardening landed first (see
 `docs/ANTI_FRAUD_PLAN.md`); this document was the execution plan and is kept for
@@ -9,7 +9,7 @@ column and endpoint names).
 
 - The upload block was extracted into a single shared helper,
   `app/services/uploads.py::store_upload`, used by **both** the logo upload and
-  the receipt upload — one storage mechanism, not two copies.
+  the receipt upload - one storage mechanism, not two copies.
 - The submit endpoint is multipart **and** still accepts a JSON body, so a
   deployment that sets `REQUIRE_RECEIPT_REVIEW=false` can keep an older client
   (and the Tier 1 test suite) working unchanged.
@@ -24,7 +24,7 @@ column and endpoint names).
 ## Why this is the next thing
 
 Tier 1 stopped the *easy* abuse (junk invoice numbers, receipt reuse, directory
-farming) but it is still **trust-based** — a volunteer can type a plausible,
+farming) but it is still **trust-based** - a volunteer can type a plausible,
 unused invoice number and be credited instantly. Tier 2 makes a purchase
 **provable**: the volunteer attaches a receipt photo and an admin approves it
 before any reward is credited.
@@ -51,7 +51,7 @@ BusinessDetail.tsx --multipart--> /transactions -> Transaction(status=pending, r
 
 ---
 
-## Step 1 — Model: add the review lifecycle
+## Step 1 - Model: add the review lifecycle
 
 `backend/app/models/transaction.py`
 
@@ -69,10 +69,10 @@ rejection_reason: Mapped[str | None] = mapped_column(Text, nullable=True)
 Use `status` values `"pending" | "approved" | "rejected"` (plain string +
 index; the project uses no Enum type elsewhere).
 
-**Do not reuse `reward_increment`** — keep it as the amount credited on
+**Do not reuse `reward_increment`** - keep it as the amount credited on
 approval so reporting stays simple.
 
-## Step 2 — Migration (existing databases)
+## Step 2 - Migration (existing databases)
 
 `backend/app/db/bootstrap.py` already reconciles the Tier 1 changes. Add a
 third step, `_ensure_review_columns`, in the same style:
@@ -89,7 +89,7 @@ and asserts the columns exist, the backfill ran, and a second call is a no-op.
 Extend `backend/tests/test_bootstrap_migration.py` (it already builds the legacy
 schema for the Tier 1 migration) with a `status`/backfill case.
 
-## Step 3 — Submission becomes multipart with a receipt
+## Step 3 - Submission becomes multipart with a receipt
 
 `backend/app/api/routes/transactions.py`
 
@@ -116,14 +116,14 @@ Reuse the **existing** upload machinery from
   `UnsupportedFileTypeError`;
 - write to `settings.UPLOAD_DIR`, filename `r{business_id}-{uuid4}{ext}`.
   (Superseded: receipts are now served to admins only, from
-  `/api/v1/admin/receipts/{filename}` — `/uploads` serves logos alone, so a
+  `/api/v1/admin/receipts/{filename}` - `/uploads` serves logos alone, so a
   leaked receipt URL is a 404.)
 - compute `receipt_sha256 = hashlib.sha256(payload).hexdigest()`.
 
 Then delegate to the service. Keep the Tier 1 gates exactly as they are
 (format → global duplicate → per-business cap → total cap).
 
-## Step 4 — Service: create `pending`, do not credit
+## Step 4 - Service: create `pending`, do not credit
 
 `backend/app/services/transactions.py`
 
@@ -133,7 +133,7 @@ Then delegate to the service. Keep the Tier 1 gates exactly as they are
 - Reject a duplicate receipt image for the same partner (same
   `receipt_sha256` already seen at that `business_id`) with the existing 409
   `duplicate_invoice` semantics and a new message.
-- Leave the daily counters **unchanged** — they must still count `pending` +
+- Leave the daily counters **unchanged** - they must still count `pending` +
   `approved`, otherwise queueing bypasses the caps.
 - New functions:
   - `approve_transaction(db, *, admin, transaction)` → `status="approved"`,
@@ -144,7 +144,7 @@ Then delegate to the service. Keep the Tier 1 gates exactly as they are
     store `rejection_reason`; never touch `reward_points`.
   - `paginate_for_review(db, *, status="pending", page, page_size)`.
 
-## Step 5 — Admin endpoints
+## Step 5 - Admin endpoints
 
 `backend/app/api/routes/admin.py`
 
@@ -160,26 +160,26 @@ Then delegate to the service. Keep the Tier 1 gates exactly as they are
 
 Reuse `bus.publish` to emit `"invoice_reviewed"` so other admin tabs refresh.
 
-## Step 6 — Frontend
+## Step 6 - Frontend
 
-- **`src/types/index.ts`** — add `status`, `receipt_url`, `reviewed_at`,
+- **`src/types/index.ts`** - add `status`, `receipt_url`, `reviewed_at`,
   `rejection_reason` to the transaction types; add `TransactionReviewOut`.
-- **`src/api/client.ts`** — add a multipart submit (extend `apiUpload` to take
+- **`src/api/client.ts`** - add a multipart submit (extend `apiUpload` to take
   extra form fields, or add `apiSubmitInvoice`).
-- **`src/pages/BusinessDetail.tsx`** — add a required
+- **`src/pages/BusinessDetail.tsx`** - add a required
   `<input type="file" accept="image/*,application/pdf">`; on success show
-  *"Submitted — your reward is credited once the receipt is reviewed."*
+  *"Submitted - your reward is credited once the receipt is reviewed."*
   Do **not** show `+1 reward` any more.
-- **`src/pages/Profile.tsx`** — split the balance into **Approved** (spendable)
+- **`src/pages/Profile.tsx`** - split the balance into **Approved** (spendable)
   and **Pending**; show `status` per history row.
-- **`src/pages/AdminDashboard.tsx`** (or a new `AdminReviews.tsx`) — review
+- **`src/pages/AdminDashboard.tsx`** (or a new `AdminReviews.tsx`) - review
   queue: receipt thumbnail (click → full image), invoice number, volunteer,
   partner, submitted time, Approve / Reject + optional reason.
 
 Respect the design constraints already in force: **sharp corners, editorial
 serif headings, ink/cream palette, no new colours or fonts.**
 
-## Step 7 — Config & rollout
+## Step 7 - Config & rollout
 
 `backend/app/core/config.py`
 
@@ -191,7 +191,7 @@ When `False`: receipt optional and credit immediately, so the Tier 1 tests and
 a pre-onboarding deployment keep working. When `True`: receipt required,
 `pending` until approved.
 
-## Step 8 — Tests
+## Step 8 - Tests
 
 New `backend/tests/test_receipt_review.py`:
 
@@ -208,9 +208,9 @@ New `backend/tests/test_receipt_review.py`:
 9. the Tier 1 suite still passes with `REQUIRE_RECEIPT_REVIEW=False`
 
 Run: `cd backend && PYTHONPATH=. ../.venv/bin/python -m pytest -q`
-(currently **79 passed** — it must stay green).
+(currently **79 passed** - it must stay green).
 
-## Step 9 — Docs
+## Step 9 - Docs
 
 - Update `docs/ANTI_FRAUD_PLAN.md`: mark Tier 2 shipped with the real
   column/endpoint names.
@@ -236,7 +236,7 @@ Run: `cd backend && PYTHONPATH=. ../.venv/bin/python -m pytest -q`
 ## Gotchas to remember
 
 - **Daily caps must count `pending` too**, or queueing bypasses them.
-- **`submit_invoice` is currently called only by `routes/transactions.py`** —
+- **`submit_invoice` is currently called only by `routes/transactions.py`** -
   grep for other callers/tests before changing its signature.
 - **`test_daily_limit.py` / `test_transactions.py` assert an instant balance.**
   They need the `REQUIRE_RECEIPT_REVIEW=False` fixture path or updated
@@ -253,7 +253,7 @@ Run: `cd backend && PYTHONPATH=. ../.venv/bin/python -m pytest -q`
 cd backend && PYTHONPATH=. ../.venv/bin/python -m pytest -q
 
 # pre-Tier-2 schema migration check (already covered by
-# backend/tests/test_bootstrap_migration.py — add a status/backfill case there)
+# backend/tests/test_bootstrap_migration.py - add a status/backfill case there)
 cd backend && PYTHONPATH=. ../.venv/bin/python -m pytest tests/test_bootstrap_migration.py -q
 
 # frontend build + type-check
@@ -262,7 +262,7 @@ cd frontend && npm run build
 
 ## Open product questions (decide before/while building)
 
-1. Who reviews — every admin, or a designated reviewer role?
+1. Who reviews - every admin, or a designated reviewer role?
 2. SLA/reminder if a submission sits pending for N days?
 3. Should a rejection allow one re-submission with a better photo?
 4. Do we tell the volunteer *why* a receipt was rejected?

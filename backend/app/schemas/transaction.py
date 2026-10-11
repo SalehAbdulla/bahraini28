@@ -36,9 +36,9 @@ class TransactionOut(ORMModel):
     #: ``pending`` | ``approved`` | ``rejected`` (see ``models.transaction``).
     status: str
     #: Tier 3 single-use receipt code, when one was used. Never exposed on the
-    #: public per-business list — like the rejection note, it stays private.
+    #: public per-business list - like the rejection note, it stays private.
     code: str | None = None
-    #: Only ever populated on the volunteer's *own* history — never on the
+    #: Only ever populated on the volunteer's *own* history - never on the
     #: public per-business list, so a rejection note stays private.
     rejection_reason: str | None = None
 

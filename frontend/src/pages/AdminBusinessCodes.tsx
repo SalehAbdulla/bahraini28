@@ -20,7 +20,7 @@ const FILTERS = [
   { value: "all", label: "All" },
 ];
 
-// Sharp-cornered pills in the existing brand/ink/red tokens — no new palette.
+// Sharp-cornered pills in the existing brand/ink/red tokens - no new palette.
 const CODE_STYLES: Record<InvoiceCodeStatus, string> = {
   issued: "border-brand-200 bg-brand-50 text-brand-700",
   claimed: "border-ink-900/15 bg-ink-900/5 text-ink-800",
@@ -266,16 +266,16 @@ export default function AdminBusinessCodes() {
                       {c.status}
                     </span>
                   </td>
-                  <td className="px-4 py-2 text-ink-800/60">{c.batch ?? "—"}</td>
+                  <td className="px-4 py-2 text-ink-800/60">{c.batch ?? "-"}</td>
                   <td className="px-4 py-2 whitespace-nowrap">{fmtDate(c.created_at)}</td>
-                  <td className="px-4 py-2">{c.claimed_by_user_name ?? "—"}</td>
+                  <td className="px-4 py-2">{c.claimed_by_user_name ?? "-"}</td>
                   <td className="px-4 py-2 text-right">
                     {c.status === "issued" ? (
                       <button type="button" className="btn-secondary" onClick={() => revoke(c)}>
                         Revoke
                       </button>
                     ) : (
-                      <span className="text-xs text-ink-800/40">—</span>
+                      <span className="text-xs text-ink-800/40">-</span>
                     )}
                   </td>
                 </tr>

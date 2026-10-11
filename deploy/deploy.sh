@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 # ---------------------------------------------------------------------------
-# Bahraini 28 — one-command deploy + smoke test.
+# Bahraini 28 - one-command deploy + smoke test.
 #
 # Prereqs (Ubuntu 24.04 / Docker host):
 #   - Docker Engine + Compose v2.20+
@@ -83,4 +83,4 @@ echo "      - optional demo data: docker compose -f deploy/docker-compose.yml ru
 echo "      - the 28 elite-card partners + their logos (idempotent):"
 echo "        docker compose -f deploy/docker-compose.yml run --rm backend python scripts/seed_partners.py"
 echo "    TLS certificates are issued automatically once this host is reachable as"
-echo "    $(grep '^SITE_DOMAIN=' deploy/.env | cut -d= -f2 || echo bahraini28.com) (and www.) — see Namecheap DNS."
+echo "    $(grep '^SITE_DOMAIN=' deploy/.env | cut -d= -f2 || echo bahraini28.com) (and www.) - see Namecheap DNS."

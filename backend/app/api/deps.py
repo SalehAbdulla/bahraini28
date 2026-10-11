@@ -82,7 +82,7 @@ def get_optional_user(
     """Resolve the caller when they present a *valid* user token, else ``None``.
 
     This is the public-directory variant of :func:`get_current_user`: an
-    anonymous visitor (no token) is never rejected — they simply receive the
+    anonymous visitor (no token) is never rejected - they simply receive the
     redacted view (e.g. no discount figures). A malformed, expired, revoked or
     expired-membership token is treated as anonymous too, so a stale token in a
     browser can never break a public page with a 401.

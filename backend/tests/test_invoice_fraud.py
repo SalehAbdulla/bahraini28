@@ -3,10 +3,10 @@
 Covers the three holes that let a volunteer credit themselves with no real
 purchase:
 
-1. ``invoice_format`` — junk like ``"!"`` or blank-ish values are rejected.
-2. ``global duplicate`` — an invoice can be credited at a partner only once,
+1. ``invoice_format`` - junk like ``"!"`` or blank-ish values are rejected.
+2. ``global duplicate`` - an invoice can be credited at a partner only once,
    *by anyone* (not just by the same user).
-3. ``total daily cap`` — a single account cannot farm rewards across every
+3. ``total daily cap`` - a single account cannot farm rewards across every
    partner in the directory in one day.
 """
 from __future__ import annotations
@@ -97,7 +97,7 @@ def test_duplicate_guard_is_case_insensitive(client, db):
 
 def test_total_daily_limit_blocks_directory_farming(client, db, monkeypatch):
     """With the total cap at 4, a 5th credit anywhere is refused."""
-    # Patch the *app's* settings — the route and the service both read the
+    # Patch the *app's* settings - the route and the service both read the
     # injected settings object, so the deployment's real config is honoured.
     settings = client.app.state.settings
     monkeypatch.setattr(settings, "DAILY_LIMIT_TOTAL", 4, raising=False)

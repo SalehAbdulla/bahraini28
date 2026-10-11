@@ -88,7 +88,7 @@ export default function AdminReviews() {
     load(1);
   }, [load]);
 
-  // Another tab (or a volunteer) may add/decide submissions — refresh on the
+  // Another tab (or a volunteer) may add/decide submissions - refresh on the
   // shared SSE feed so the queue never shows a stale decision.
   useEffect(() => {
     if (!adminToken) return;
@@ -189,7 +189,7 @@ export default function AdminReviews() {
                     {t.receipt_url ? (
                       <ReceiptThumb url={t.receipt_url} invoice={t.invoice_number} />
                     ) : (
-                      <span className="text-ink-800/40">—</span>
+                      <span className="text-ink-800/40">-</span>
                     )}
                   </td>
                   <td className="px-4 py-2 font-mono font-semibold text-ink-900">
@@ -209,7 +209,7 @@ export default function AdminReviews() {
                   <td className="px-4 py-2">
                     {t.status !== "pending" ? (
                       <span className="text-xs text-ink-800/50">
-                        {t.reviewed_at ? `Reviewed ${fmtDate(t.reviewed_at)}` : "—"}
+                        {t.reviewed_at ? `Reviewed ${fmtDate(t.reviewed_at)}` : "-"}
                       </span>
                     ) : reasonFor === t.id ? (
                       <div className="flex min-w-[200px] flex-col gap-2">

@@ -2,20 +2,20 @@
  * Client-side receipt preparation.
  *
  * Volunteers photograph receipts on a phone, where one JPEG is routinely 3-5 MB
- * — several times the server's per-file cap, and slow to upload over mobile
+ * - several times the server's per-file cap, and slow to upload over mobile
  * data. Downscaling to a generous long edge and re-encoding as JPEG keeps a
  * perfectly legible receipt at a few hundred KB, so the server cap
  * (`MAX_UPLOAD_SIZE_MB`) becomes a backstop rather than the thing a normal
  * submission trips over.
  *
- * PDFs — and anything the browser cannot decode — are returned untouched; the
+ * PDFs - and anything the browser cannot decode - are returned untouched; the
  * server still enforces the size and type limits.
  */
 
 /** Longest edge, in pixels, a receipt image is scaled down to. */
 const MAX_EDGE = 2000;
 
-/** JPEG quality for the re-encode — receipts stay readable well below 1. */
+/** JPEG quality for the re-encode - receipts stay readable well below 1. */
 const QUALITY = 0.82;
 
 /** Skip the (lossy) round-trip when the file is already this small. */

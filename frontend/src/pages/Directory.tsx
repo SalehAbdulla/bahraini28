@@ -54,7 +54,7 @@ export default function Directory() {
             Partner directory
           </h1>
           <p className="mt-2 text-sm text-ink-800/70">
-            Discounted businesses across Bahrain — filtered by category and area.
+            Discounted businesses across Bahrain - filtered by category and area.
           </p>
         </div>
         <div className="flex gap-2 flex-wrap">

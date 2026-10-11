@@ -350,7 +350,7 @@ def serve_receipt(
     path = Path(settings.UPLOAD_DIR) / name
     if referenced is None or not path.is_file():
         raise TransactionNotFoundError
-    # Sensitive evidence — never let a shared cache keep a copy.
+    # Sensitive evidence - never let a shared cache keep a copy.
     return FileResponse(path, headers={"Cache-Control": "private, no-store"})
 
 
@@ -363,7 +363,7 @@ def review_queue(
     page: int = Query(1, ge=1),
     page_size: int = Query(12, ge=1, le=100),
 ):
-    """Receipt-review queue — oldest submission first, so nothing is starved."""
+    """Receipt-review queue - oldest submission first, so nothing is starved."""
     items, total = tx_service.paginate_for_review(
         db, status=None if status == "all" else status, page=page, page_size=page_size
     )
@@ -629,7 +629,7 @@ def generate_business_codes(
 
 @router.delete("/codes/{code_id}", response_model=InvoiceCodeOut)
 def revoke_invoice_code(code_id: int, db: DbSession, admin: CurrentAdmin):
-    """Revoke a code that was never claimed — e.g. a sheet that was lost."""
+    """Revoke a code that was never claimed - e.g. a sheet that was lost."""
     code = code_service.get_code_or_404(db, code_id)
     return _code_out(code_service.revoke_code(db, code))
 

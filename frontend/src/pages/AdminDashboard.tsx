@@ -49,7 +49,7 @@ export default function AdminDashboard() {
         /* ignore malformed frames */
       }
     });
-    es.onerror = () => setFeedStatus("Connection interrupted — reconnecting…");
+    es.onerror = () => setFeedStatus("Connection interrupted - reconnecting…");
 
     return () => es.close();
   }, [adminToken]);
@@ -94,7 +94,7 @@ export default function AdminDashboard() {
       setPwCurrent("");
       setPwNew("");
       setPwConfirm("");
-      setPwNotice("Password updated — use it the next time you sign in.");
+      setPwNotice("Password updated - use it the next time you sign in.");
     } catch (err) {
       setPwError(
         err instanceof RequestError ? err.message : "Could not change the password."

@@ -1,11 +1,11 @@
-"""Coverage for ``scripts/seed_partners.py`` — the elite-card partner seed.
+"""Coverage for ``scripts/seed_partners.py`` - the elite-card partner seed.
 
 That script is the only thing that puts the 28 pilot partners, their logos and
 their volunteer discounts into a database, and it is data-driven: a typo in the
 ``PARTNERS`` table would ship silently as a partner without a logo, a category
 slug that does not exist, or two partners sharing one deck page. So these tests
-first pin the table itself — it has to stay in step with the logo files sitting
-next to the script — and then run the real ``seed()`` twice against a throwaway
+first pin the table itself - it has to stay in step with the logo files sitting
+next to the script - and then run the real ``seed()`` twice against a throwaway
 SQLite database and upload directory. The second run must create nothing and
 rewrite no logo, which is what makes the script safe to re-run on the production
 database during a pilot update.
@@ -72,7 +72,7 @@ def test_non_percentage_partners_carry_a_label():
     """A 0% partner needs a label.
 
     Its benefit cannot be expressed as a number, and without a label the
-    directory would print "-0%" — which is exactly what this field exists to
+    directory would print "-0%" - which is exactly what this field exists to
     prevent.
     """
     for partner in seed_partners.PARTNERS:

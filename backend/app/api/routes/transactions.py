@@ -111,7 +111,7 @@ async def submit_invoice(
             settings=settings,
         )
     except Exception:
-        # A gate rejected the submission — drop the just-written file rather
+        # A gate rejected the submission - drop the just-written file rather
         # than leaving orphaned uploads behind.
         if receipt_path:
             (Path(settings.UPLOAD_DIR) / Path(receipt_path).name).unlink(missing_ok=True)

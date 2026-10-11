@@ -119,7 +119,7 @@ def change_admin_password(
     """Rotate an admin's **own** password after re-checking the current one.
 
     Admins are exempt from single-session enforcement (they carry no
-    ``token_version``), so this cannot sign other admin tabs out — the same
+    ``token_version``), so this cannot sign other admin tabs out - the same
     exemption that lets several dashboards share one login.
     """
     if not verify_password(current_password, admin.password_hash):

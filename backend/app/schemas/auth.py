@@ -5,7 +5,7 @@ from pydantic import BaseModel, EmailStr, Field
 
 
 class UserLoginRequest(BaseModel):
-    """Login payload — ``identifier`` is either the email or the CPR number."""
+    """Login payload - ``identifier`` is either the email or the CPR number."""
 
     identifier: str = Field(min_length=3, max_length=255)
     password: str = Field(min_length=1, max_length=128)

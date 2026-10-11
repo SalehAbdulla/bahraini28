@@ -1,7 +1,7 @@
 """Public business directory tests: listing with filters and detail view.
 
 The directory itself is public, but the exact member benefit (the discount) is
-a **member-only reveal** — these tests pin both halves: anonymous callers get
+a **member-only reveal** - these tests pin both halves: anonymous callers get
 ``None``, a valid logged-in member gets the real figure.
 """
 from __future__ import annotations
@@ -79,7 +79,7 @@ def test_business_detail_reveals_the_discount_to_a_member(client, db):
 def test_anonymous_detail_hides_the_offer_wording(client, db):
     """For the pilot partners the offer text lives in ``description``
     (``seed_partners`` sets ``description=offer``), so it is part of the
-    member-only reveal — otherwise it leaks the very discount we hide."""
+    member-only reveal - otherwise it leaks the very discount we hide."""
     bz = make_business(db, name="Watches", cr="CR-DESC", discount=25)
     bz.description = "خصم 25%"
     db.add(bz)
@@ -114,7 +114,7 @@ def test_member_listing_reveals_the_benefit(client, db):
 
 
 def test_invalid_token_is_treated_as_anonymous(client, db):
-    """A stale/garbage token must not 401 a public page — it degrades to the
+    """A stale/garbage token must not 401 a public page - it degrades to the
     redacted anonymous view instead."""
     seed_directory(db)
     res = client.get(

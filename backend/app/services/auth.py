@@ -118,7 +118,7 @@ def change_password(db: Session, user: User, current_password: str, new_password
     if not verify_password(current_password, user.password_hash):
         raise InvalidCredentialsError
     user.password_hash = hash_password(new_password)
-    # Invalidate sessions from other devices — keep only this one.
+    # Invalidate sessions from other devices - keep only this one.
     user.token_version += 1
     db.add(user)
     db.commit()

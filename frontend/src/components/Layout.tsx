@@ -23,8 +23,8 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         <nav className="container-page h-16 flex items-center justify-between">
           <Link to="/" className="flex items-center gap-2.5">
             {/* Official Bahraini 28 mark (green brush lettering + "28").
-                The 240px `logo-sm` variant covers every on-screen slot — 36px
-                here, 44px and 56px on the landing page — at up to 4× DPR, so
+                The 240px `logo-sm` variant covers every on-screen slot - 36px
+                here, 44px and 56px on the landing page - at up to 4× DPR, so
                 the 480px master is kept in the repo but never shipped. */}
             <img src="/brand/logo-sm.png" alt="Bahraini 28" className="h-9 w-auto" />
             <span className="hidden whitespace-nowrap font-serif text-lg font-medium tracking-tight text-ink-900 sm:inline">
@@ -76,7 +76,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                 Bahraini 28
               </p>
               <p className="mt-1.5">
-                © {new Date().getFullYear()} Bahraini 28 · bahraini28.com — volunteer
+                © {new Date().getFullYear()} Bahraini 28 · bahraini28.com - volunteer
                 discount tracking portal
               </p>
             </div>

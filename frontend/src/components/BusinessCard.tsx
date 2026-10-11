@@ -59,7 +59,7 @@ export default function BusinessCard({ business }: { business: BusinessSummary }
         {business.name}
       </h3>
       <p className="mt-1.5 text-xs leading-relaxed text-ink-800/60">
-        {(business.areas ?? []).join(" · ") || "—"}
+        {(business.areas ?? []).join(" · ") || "-"}
       </p>
 
       <span className="mt-auto inline-flex items-center gap-1.5 pt-5 text-xs font-semibold text-ink-900">

@@ -5,7 +5,7 @@ interface GlowingLinesProps {
 /**
  * Decorative animated "energy flow" background for the dark ink sections,
  * adapted from the reference design and recoloured to the Bahraini 28 mint
- * palette. Purely decorative — renders nothing interactive.
+ * palette. Purely decorative - renders nothing interactive.
  */
 export default function GlowingLines({ className = "" }: GlowingLinesProps) {
   return (

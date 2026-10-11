@@ -38,7 +38,7 @@ export interface BusinessDetail {
   logo_url: string | null;
   category_id: number;
   category_name: string;
-  /** `null` for an anonymous visitor — the exact benefit is a member-only
+  /** `null` for an anonymous visitor - the exact benefit is a member-only
    *  reveal, returned only when the request carries a valid member token. */
   discount_percentage: number | null;
   /** Short headline replacing the percentage when the benefit is not a flat

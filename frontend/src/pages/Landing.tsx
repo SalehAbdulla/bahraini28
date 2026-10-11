@@ -118,7 +118,7 @@ const STEPS: { step: string; icon: ReactElement; title: string; body: string }[]
     step: "02",
     icon: <BagIcon className="h-6 w-6" />,
     title: "Shop at the store",
-    body: "Show your membership at the counter — the discount is applied on the spot.",
+    body: "Show your membership at the counter - the discount is applied on the spot.",
   },
   {
     step: "03",
@@ -171,7 +171,7 @@ export default function Landing() {
 
             <p className="mt-6 max-w-xl text-base leading-relaxed text-cream-100/75 sm:text-lg">
               Explore discounted businesses across Bahrain, submit your
-              physical-store invoices, and watch your rewards grow — all in one
+              physical-store invoices, and watch your rewards grow - all in one
               portal.
             </p>
 
@@ -202,7 +202,7 @@ export default function Landing() {
           </Reveal>
         </div>
 
-        {/* Decorative badge on large screens — fully inside the card so the
+        {/* Decorative badge on large screens - fully inside the card so the
             rounded edge + overflow-hidden never clip it. */}
         <div
           aria-hidden="true"
@@ -226,7 +226,7 @@ export default function Landing() {
             Built around the <span className="text-brand-600">volunteer</span>
           </h2>
           <p className="mt-4 max-w-xl text-sm leading-relaxed text-ink-800/70 sm:text-base">
-            A community programme that rewards the people who give their time —
+            A community programme that rewards the people who give their time -
             with simple, secure access to partner discounts across Bahrain.
           </p>
         </Reveal>
@@ -338,7 +338,7 @@ export default function Landing() {
             Ready to claim your discount?
           </h2>
           <p className="mx-auto mt-4 max-w-xl text-sm leading-relaxed text-cream-100/70 sm:text-base">
-            Membership is validated against your volunteer expiry date — sign in
+            Membership is validated against your volunteer expiry date - sign in
             to see the partners available to you today.
           </p>
           <div className="mt-8 flex flex-wrap justify-center gap-3">

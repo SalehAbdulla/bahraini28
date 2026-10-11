@@ -5,7 +5,7 @@ only resets a **volunteer's** password, so this is the escape hatch the
 deployment runbook needs:
 
 * replace the bootstrap password ``deploy/.env`` generated, **before** the first
-  login — when no admin UI session exists yet;
+  login - when no admin UI session exists yet;
 * recover an admin account whose password has been lost.
 
 Local use (from the backend/ directory):

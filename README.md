@@ -3,7 +3,7 @@
 A lightweight, high-performance **discount tracking portal** for the **Bahraini
 28 volunteer organization**. Volunteers browse discounted merchants across
 Bahrain, submit physical-store invoice numbers after purchase, and accumulate
-shared reward points — while administrators manage users, override
+shared reward points - while administrators manage users, override
 expiries/rewards, and watch purchases arrive in real time.
 
 Monorepo with two independent components:
@@ -21,12 +21,12 @@ Monorepo with two independent components:
   access is blocked once `expiry_date` passes (checked on every request).
 - **Member-only benefit reveal**: the directory (partner names, logos,
   categories, areas) stays public, but the **exact discount** is withheld from
-  anonymous callers — `GET /api/v1/businesses` and `/{id}` return
+  anonymous callers - `GET /api/v1/businesses` and `/{id}` return
   `discount_percentage: null` / `discount_label: null` unless the request
   carries a valid, unexpired member token (an invalid or stale token degrades to
   the anonymous view rather than a 401). The partner **`description` is redacted
   too**, because the pilot partners carry the elite-card benefit wording there
-  (`seed_partners` sets `description=offer`) — leaving it public would leak the
+  (`seed_partners` sets `description=offer`) - leaving it public would leak the
   discount itself. The public per-business transaction history never exposes an
   `invoice_number` either. Implemented by `app/api/deps.py::get_optional_user`.
 - **Single-session enforcement**: each new user login rolls `token_version`,
@@ -37,11 +37,11 @@ Monorepo with two independent components:
   `Asia/Bahrain`, so they **auto-reset at midnight** with no background job.
 - **Invoice-number validation (anti-fraud, Tier 1)**: a submitted invoice must
   match the partner's `invoice_pattern` regex (or a global fallback), and each
-  invoice number can be credited **only once per business — by anyone**, so a
+  invoice number can be credited **only once per business - by anyone**, so a
   receipt cannot be shared between accounts and junk such as `"!!!"` is
   rejected. Accounts crediting an unusually high number of *distinct* partners
   in one day raise a `fraud_signal` on the admin dashboard.
-- **Receipt proof + admin approval (anti-fraud, Tier 2 — shipped)**: a
+- **Receipt proof + admin approval (anti-fraud, Tier 2 - shipped)**: a
   submission also carries a **receipt photo/PDF** (`POST /api/v1/transactions`
   is multipart: `business_id`, `invoice_number`, `receipt`). The row is stored
   as `pending` and credits **nothing**; an admin approves it from
@@ -51,11 +51,11 @@ Monorepo with two independent components:
   SHA-256 guard), and `pending` submissions still consume the daily caps.
   Set `REQUIRE_RECEIPT_REVIEW=false` to fall back to Tier 1 (instant credit).
   See `docs/ANTI_FRAUD_PLAN.md`.
-- **Single-use receipt codes (anti-fraud, Tier 3 — shipped)**: a partner the
+- **Single-use receipt codes (anti-fraud, Tier 3 - shipped)**: a partner the
   admin flags with `codes_required` only accepts a submission that quotes an
   **unused code the admin issued to that partner** (`B28-XXXX-XXXX`, printed on
   the receipt), so a fabricated number can never be credited. Codes move
-  `issued → claimed → redeemed` — claimed while the submission waits in the
+  `issued → claimed → redeemed` - claimed while the submission waits in the
   review queue, redeemed on approval, and released back to `issued` if the
   submission is rejected (an honest mistake must not burn the only code on the
   receipt). Admins mint batches and revoke unclaimed codes from
@@ -91,19 +91,19 @@ run, and stops both servers on Ctrl-C. `WEB_PORT` overrides the SPA port; leave
 
 ### Tech notes
 
-- `bcrypt` (pyca) for password hashing — `passlib` is unmaintained and was
+- `bcrypt` (pyca) for password hashing - `passlib` is unmaintained and was
   deliberately not used.
-- `PyJWT` for tokens — `python-jose` has known CVEs and is not used.
+- `PyJWT` for tokens - `python-jose` has known CVEs and is not used.
 - `TZDateTime` (SQLAlchemy `TypeDecorator`) stores UTC and always returns
   timezone-aware datetimes, safe on both SQLite and PostgreSQL.
 - Real-time admin notifications use **SSE** through a small in-process
   pub/sub bus (`app/services/notifications.py`). For multi-worker deployment,
-  swap the bus for Redis pub/sub — same API surface.
+  swap the bus for Redis pub/sub - same API surface.
 - Uploaded files (business logos + invoice receipts) share one helper
   (`app/services/uploads.py`) and one cap, `MAX_UPLOAD_SIZE_MB`. Receipt photos
   are downscaled in the browser first (`frontend/src/lib/receipt.ts`), so the cap
-  is a backstop — a phone JPEG is routinely 3-5 MB, a legible receipt a few
-  hundred KB — and the input requests the rear camera on mobile.
+  is a backstop - a phone JPEG is routinely 3-5 MB, a legible receipt a few
+  hundred KB - and the input requests the rear camera on mobile.
 - **Uploads are only partly public.** `/uploads/<file>` serves a file *only when
   a partner references it as their logo* (`app/api/routes/uploads.py`); there is
   no blanket static mount. Invoice receipts share the same directory on disk but
@@ -171,7 +171,7 @@ so the dev proxy and the production reverse proxy need no extra config.
 
 - Public: landing, directory (category/area/search filters), business detail
   (branches, invoice **+ receipt** submission), public transaction history. The
-  exact **discount is a member-only reveal** — an anonymous visitor sees a
+  exact **discount is a member-only reveal** - an anonymous visitor sees a
   "sign in to see your discount" lock instead of the figure.
 - Volunteer: profile + rewards cards split into **approved (spendable)** and
   **awaiting review**, personal history with per-row `pending`/`approved`/
@@ -192,7 +192,7 @@ so the dev proxy and the production reverse proxy need no extra config.
 ## Production deployment (Docker Compose + Caddy)
 
 Everything needed to run on a single VPS (e.g. an Oracle Cloud **Always Free**
-Arm VM — Ubuntu 24.04, ≥2 GB RAM — or any Docker host) lives in `deploy/`:
+Arm VM - Ubuntu 24.04, ≥2 GB RAM - or any Docker host) lives in `deploy/`:
 
 **Stack:** `postgres:17-alpine` (named volume `pgdata`) · FastAPI backend
 (`/data/uploads` persistent volume for business logos) · one-shot frontend
@@ -209,7 +209,7 @@ cd /opt/bahraini28
 First boot creates the bootstrap admin (`admin` / password from `deploy/.env`).
 **Change that password immediately, then set `SEED_DEFAULT_ADMIN=false`** so the
 bootstrap account can't be recreated. Use the dashboard's *Change password*
-button, or — before the first login, and for recovery — the CLI:
+button, or - before the first login, and for recovery - the CLI:
 
 ```bash
 docker compose -f deploy/docker-compose.yml run --rm backend \
@@ -236,10 +236,10 @@ Operational notes:
   from single-session invalidation, so rotating does not sign other tabs out.
 - **One uvicorn worker on purpose**: the SSE admin feed uses an in-process
   pub/sub bus. Swap it for Redis pub/sub (same API surface) before scaling.
-- **Backups**: `deploy/backup.sh` — daily `pg_dump` (custom format) + uploads
+- **Backups**: `deploy/backup.sh` - daily `pg_dump` (custom format) + uploads
   archive with 14-day retention; cron entry in `deploy/backup-cron.txt`.
   `deploy/offsite-backup.sh` then copies both artifacts **off this host** with
-  `rclone` (config: `deploy/offsite.env`) — without it, every backup lives on the
+  `rclone` (config: `deploy/offsite.env`) - without it, every backup lives on the
   same disk as the data it protects. A ready-made **Oracle Object Storage** remote
   (free tier; instance-principal, user-key and S3-compatible flavours) is in
   `deploy/rclone-oci.conf.example`. Restore a *pair* from the same run:
@@ -260,7 +260,7 @@ Operational notes:
 ### DNS (Namecheap) → TLS
 
 Create `A` records for `@` and `www` pointing at the VPS public IP, then
-Caddy issues and auto-renews certificates automatically — the SPA is served
+Caddy issues and auto-renews certificates automatically - the SPA is served
 at `https://bahraini28.com/` and the API at `/api/v1/*`. Optional CAA record:
 `0 issue "letsencrypt.org"`. The SSE feed works through the proxy via
 `/api/v1/admin/notifications/stream` (admin JWT as `?_token=`).
@@ -268,7 +268,7 @@ at `https://bahraini28.com/` and the API at `/api/v1/*`. Optional CAA record:
 ### Co-hosting on a shared VPS (tenant behind another reverse proxy)
 
 If the host **already runs another reverse proxy that owns `:80`/`:443`** (for
-example beyond's `beyond-nginx`), do **not** run the standalone stack above —
+example beyond's `beyond-nginx`), do **not** run the standalone stack above -
 its Caddy would fight the existing proxy for those ports. Use the co-host files
 instead; they make bahraini28 a tenant on the shared `beyond-prod` network:
 
@@ -312,12 +312,12 @@ Co-hosting notes:
   co-host file with `BAHRAINI28_COMPOSE=deploy/docker-compose.cohost.yml`
   (used by `deploy/backup.sh` and `deploy/restore.sh`; set it in the cron line).
 - **Own cert filenames**: the vhost uses `bahraini28-*.pem`, never the edge's
-  `fullchain.pem`/`privkey.pem` — overwriting those would break the other sites.
+  `fullchain.pem`/`privkey.pem` - overwriting those would break the other sites.
 - **SSE**: the vhost gives `/api/v1/admin/notifications/stream` its own
   `proxy_buffering off` location, or the admin live feed would stall.
 - **Log caps matter**: unbounded json-file logs have filled this host's root
   disk before; every service in the co-host file caps its logs.
-- Don't run `./deploy/deploy.sh` here — it assumes it owns `:80`.
+- Don't run `./deploy/deploy.sh` here - it assumes it owns `:80`.
 
 ### E2E tests (Playwright)
 

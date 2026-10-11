@@ -1,7 +1,7 @@
 """Tier 3 tests: single-use merchant receipt codes.
 
 Covers the control that makes a fabricated invoice *impossible* for a partner who
-opts in — a submission must quote a code the admin issued to that partner:
+opts in - a submission must quote a code the admin issued to that partner:
 
 1. an admin mints a batch; every code is ``B28-XXXX-XXXX``, ``issued``, and unique;
 2. listing + stats report the inventory; revoking cancels an unclaimed code;
@@ -21,7 +21,7 @@ RECEIPT_BYTES = b"\x89PNG\r\n\x1a\n" + b"\x00" * 32
 
 
 def submit(client, token, business_id, invoice, payload=RECEIPT_BYTES, code=None):
-    """Multipart submission — the shape the volunteer UI posts."""
+    """Multipart submission - the shape the volunteer UI posts."""
     files = None
     if payload is not None:
         files = {"receipt": ("receipt.png", payload, "image/png")}
@@ -232,7 +232,7 @@ def test_same_code_cannot_back_two_submissions(review_client, review_db):
     assert submit(review_client, token, bz.id, "INV-ONE", payload=b"h" * 40, code=code).status_code == 201
 
     # A second (even honest) submission with the same code is refused while the
-    # first is still in the queue — the code is spent for good once approved.
+    # first is still in the queue - the code is spent for good once approved.
     res = submit(review_client, token, bz.id, "INV-TWO", payload=b"i" * 40, code=code)
     assert res.status_code == 409
     assert res.json()["code"] == "invoice_code_used"

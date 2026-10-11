@@ -103,7 +103,7 @@ export default function Profile() {
               ["Name", me.name],
               ["CPR", me.cpr],
               ["Email", me.email],
-              ["Phone", me.phone || "—"],
+              ["Phone", me.phone || "-"],
               ["Approved rewards", me.reward_points],
               ["Awaiting review", me.pending_reward_points],
               ["Membership expiry", fmtDate(me.expiry_date)],
@@ -154,7 +154,7 @@ export default function Profile() {
       <div className="mt-4 bg-white border border-ink-900/10 rounded-2xl overflow-hidden">
         {history.length === 0 ? (
           <p className="p-4 text-sm text-ink-800/50">
-            No transactions yet — visit the directory and submit your first invoice!
+            No transactions yet - visit the directory and submit your first invoice!
           </p>
         ) : (
           <table className="w-full text-sm">
@@ -173,7 +173,7 @@ export default function Profile() {
                   <td className="px-4 py-2">{t.business_name}</td>
                   <td className="px-4 py-2 font-mono">{t.invoice_number}</td>
                   <td className="px-4 py-2">
-                    {t.status === "approved" ? `+${t.reward_increment}` : "—"}
+                    {t.status === "approved" ? `+${t.reward_increment}` : "-"}
                   </td>
                   <td className="px-4 py-2">
                     <StatusPill status={t.status} />

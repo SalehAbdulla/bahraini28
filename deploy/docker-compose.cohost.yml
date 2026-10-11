@@ -1,4 +1,4 @@
-# Bahraini 28 — co-hosted stack (a tenant behind beyond's nginx on the same VPS).
+# Bahraini 28 - co-hosted stack (a tenant behind beyond's nginx on the same VPS).
 #
 # Use this INSTEAD OF deploy/docker-compose.yml when the host already runs
 # beyond's reverse proxy (`beyond-nginx`), which owns :80/:443.
@@ -8,13 +8,13 @@
 #
 # This is a COMPLETE file, not a `-f base -f override` pair, on purpose: Compose
 # *concatenates* `ports` across -f files, so an override could never remove the
-# base file's 80/443 publish — the edge would then collide with us.
+# base file's 80/443 publish - the edge would then collide with us.
 #
 # What differs from the standalone stack:
-#   * Caddy publishes NO host ports — beyond-nginx is the only public entrypoint.
+#   * Caddy publishes NO host ports - beyond-nginx is the only public entrypoint.
 #   * Caddy joins beyond's `beyond-prod` network under the unique alias
 #     `bahraini28-web`; the edge vhost proxies bahraini28.com to it (HTTP only).
-#   * TLS is terminated at the edge, so Caddy serves plain HTTP — Caddyfile.cohost.
+#   * TLS is terminated at the edge, so Caddy serves plain HTTP - Caddyfile.cohost.
 #   * Every service caps its logs. Unbounded json-file logs once filled this
 #     host's root disk and took beyond down, so nothing here may grow forever.
 #   * Memory limits keep bahraini28 from starving its co-tenants.
@@ -90,7 +90,7 @@ services:
     restart: unless-stopped
     logging: *default-logging
     mem_limit: 128m
-    # NO `ports:` — beyond-nginx owns :80/:443 on this host. Public traffic
+    # NO `ports:` - beyond-nginx owns :80/:443 on this host. Public traffic
     # arrives through the edge vhost on the shared `beyond-prod` network.
     volumes:
       - ./Caddyfile.cohost:/etc/caddy/Caddyfile:ro
@@ -124,6 +124,6 @@ networks:
   internal:
     driver: bridge
   # beyond's network (docker-compose.prod.yml sets `default.name: beyond-prod`).
-  # It must already exist — bring beyond up once before this stack.
+  # It must already exist - bring beyond up once before this stack.
   beyond-prod:
     external: true

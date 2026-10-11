@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # ---------------------------------------------------------------------------
-# Bahraini 28 — local development runner (hot reload, one command).
+# Bahraini 28 - local development runner (hot reload, one command).
 #
 #   ./run.sh                  API on :8000 + SPA on :5173, both watched
 #   ./run.sh --seed           ...plus demo businesses + a volunteer login
@@ -63,7 +63,7 @@ die()  { printf '%sfail%s  %s\n' "$C_ERR" "$C_RESET" "$*" >&2; exit 1; }
 
 usage() {
   cat <<'EOF'
-Bahraini 28 — local dev runner (hot reload)
+Bahraini 28 - local dev runner (hot reload)
 
 Usage: ./run.sh [options]
 
@@ -140,7 +140,7 @@ proc_alive() {
 
 # Stop a child we launched. On a terminal Ctrl-C the whole process group has
 # already received SIGINT and both servers exit cleanly on their own, so wait
-# first — that keeps the terminal free of "Terminated" job chatter. Escalate
+# first - that keeps the terminal free of "Terminated" job chatter. Escalate
 # TERM, then KILL, only for signals the children never saw (e.g. `kill <pid>`).
 stop_child() {
   local pid="$1" i=0
@@ -157,7 +157,7 @@ stop_child() {
     done
   fi
   if proc_alive "$pid"; then
-    info "pid $pid ignored SIGTERM — sending SIGKILL"
+    info "pid $pid ignored SIGTERM - sending SIGKILL"
     kill_tree KILL "$pid"
   fi
 }
@@ -220,7 +220,7 @@ check_python() {
     if [ "$NO_INSTALL" = 1 ]; then
       die "no virtualenv found and NO_INSTALL=1 (create one: python3 -m venv .venv)"
     fi
-    step "No virtualenv found — creating .venv"
+    step "No virtualenv found - creating .venv"
     command -v python3 >/dev/null 2>&1 || die "python3 not found on PATH"
     python3 -m venv "$ROOT/.venv"
     PY="$ROOT/.venv/bin/python"
@@ -340,7 +340,7 @@ if [ "$RUN_BACKEND" = 0 ] && { [ "$SEED" = 1 ] || [ "$SEED_PARTNERS" = 1 ] || [ 
 fi
 if [ "$RUN_BACKEND" = 1 ] && [ "$RUN_WEB" = 1 ] && [ "$API_PORT" != "$PROXY_TARGET_PORT" ]; then
   warn "API_PORT=$API_PORT, but vite.config.ts proxies /api and /uploads to :$PROXY_TARGET_PORT"
-  warn "the SPA would never reach this API — start it with API_PORT=$PROXY_TARGET_PORT"
+  warn "the SPA would never reach this API - start it with API_PORT=$PROXY_TARGET_PORT"
 fi
 
 step "Checking the local environment"
@@ -388,7 +388,7 @@ if [ "$RUN_BACKEND" = 1 ]; then
     start_api >>"$API_LOG" 2>&1 &
     STARTED_API_PID=$!
     if wait_http "http://127.0.0.1:$API_PORT/health" 180; then
-      ok "API ready — log: $API_LOG"
+      ok "API ready - log: $API_LOG"
     else
       warn "API did not become healthy within 90s; last log lines:"
       tail -n 30 "$API_LOG" >&2 || true

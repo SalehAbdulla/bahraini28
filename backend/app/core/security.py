@@ -1,10 +1,10 @@
 """Security primitives: password hashing (bcrypt) and JWT tokens (PyJWT).
 
 Library choices (industry-standard, actively maintained):
-- ``bcrypt`` (pyca team) — modern password hashing. The plan named
+- ``bcrypt`` (pyca team) - modern password hashing. The plan named
   ``passlib[bcrypt]`` but passlib is effectively unmaintained since 2020 and
   is incompatible with recent ``bcrypt`` releases and Python 3.13+.
-- ``PyJWT`` — the de-facto standard JWT library. ``python-jose`` (named in
+- ``PyJWT`` - the de-facto standard JWT library. ``python-jose`` (named in
   the plan) has known CVEs and is no longer recommended by the FastAPI docs.
 """
 from __future__ import annotations

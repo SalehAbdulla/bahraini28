@@ -35,7 +35,7 @@ class Area(Base):
 
 
 class BusinessArea(Base):
-    """Association between a Business and an Area — one row per branch.
+    """Association between a Business and an Area - one row per branch.
 
     A business with three branches across two areas has three rows, each with
     optional branch-level contact details.

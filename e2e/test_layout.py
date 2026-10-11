@@ -1,4 +1,4 @@
-"""Layout guard — measure, don't eyeball.
+"""Layout guard - measure, don't eyeball.
 
 The editorial design centres every page with equal left/right gutters through
 the shared `.container-page` wrapper. A regression (a stray `100vw`, a negative

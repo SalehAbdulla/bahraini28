@@ -147,7 +147,7 @@ export default function AdminUsers() {
         admin: true,
         body: { new_password: pw },
       });
-      window.alert("Password reset — the user must change it on next login.");
+      window.alert("Password reset - the user must change it on next login.");
     } catch (err) {
       window.alert(err instanceof Error ? err.message : "Reset failed.");
     }

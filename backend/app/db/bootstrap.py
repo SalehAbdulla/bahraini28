@@ -23,7 +23,7 @@ Tier 3 (single-use merchant receipt codes)
   ``create_all`` builds it; only the two columns need reconciling here.
 
 Partner benefits
-* ``businesses.discount_label`` — the short headline shown instead of the
+* ``businesses.discount_label`` - the short headline shown instead of the
   percentage for partners whose benefit is not a flat percentage ("Special
   offer", free weekly ice cream, ...). Their ``discount_percentage`` stays 0.
 
@@ -58,7 +58,7 @@ _REVIEW_COLUMNS: tuple[tuple[str, str], ...] = (
 
 
 def _quote(identifier: str) -> str:
-    """Minimal identifier quoting — names here are internal constants."""
+    """Minimal identifier quoting - names here are internal constants."""
     return '"' + identifier.replace('"', "") + '"'
 
 
@@ -106,7 +106,7 @@ def _widen_invoice_uniqueness(engine: Engine) -> None:
                 )
             else:
                 # SQLite cannot drop a table constraint; the old (stricter,
-                # per-user) rule is left in place — it is a harmless subset of
+                # per-user) rule is left in place - it is a harmless subset of
                 # the new rule, which the unique index below enforces.
                 conn.execute(text(f"DROP INDEX IF EXISTS {_quote(_OLD_CONSTRAINT)}"))
 
@@ -136,7 +136,7 @@ def _ensure_review_columns(engine: Engine) -> None:
     """Add the Tier 2 review lifecycle columns, then backfill legacy rows.
 
     Existing rows were credited *instantly* under Tier 1, so they are stamped
-    ``approved`` with ``reviewed_at = created_at`` — otherwise every historical
+    ``approved`` with ``reviewed_at = created_at`` - otherwise every historical
     reward would silently stop counting as spendable.
     """
     inspector = inspect(engine)
@@ -181,7 +181,7 @@ def _ensure_review_columns(engine: Engine) -> None:
             )
         )
 
-        # Backfill once — only meaningful on the boot that adds ``status``.
+        # Backfill once - only meaningful on the boot that adds ``status``.
         if "status" in added:
             conn.execute(
                 text("UPDATE transactions SET status = 'approved' WHERE status IS NULL")

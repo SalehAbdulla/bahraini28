@@ -14,12 +14,12 @@ purchase happened:
 
 A single account could therefore fabricate ~`3 x N` rewards per day, every day.
 
-## Tier 1 — shipped (hardening, no partner integration)
+## Tier 1 - shipped (hardening, no partner integration)
 
 | Control | Where | Effect |
 | --- | --- | --- |
 | `invoice_pattern` per partner (regex, full match) + global fallback | `Business.invoice_pattern`, `services/transactions.validate_invoice_format` | Rejects implausible invoices (`"!!!"`, blank-ish strings, wrong prefix). |
-| Global duplicate guard `UNIQUE(business_id, invoice_number)` | `models/transaction.py`, `services/transactions.submit_invoice` | An invoice is credited once per partner **by anyone** — receipt sharing dies. |
+| Global duplicate guard `UNIQUE(business_id, invoice_number)` | `models/transaction.py`, `services/transactions.submit_invoice` | An invoice is credited once per partner **by anyone** - receipt sharing dies. |
 | Total daily cap `DAILY_LIMIT_TOTAL` | `core/config.py`, `services/transactions.count_uses_today_total` | Stops directory farming; also exposed to the client as `remaining_today_total`. |
 | Fraud signal | `routes/transactions.py` → SSE `fraud_signal` | Dashboard alert when one account credits ≥ `FRAUD_DISTINCT_BUSINESSES_PER_DAY` distinct partners in a day. |
 | Canonical invoice form | `normalize_invoice_number` | Trim + upper-case, so `inv-77` and `INV-77` collide as intended. |
@@ -27,10 +27,10 @@ A single account could therefore fabricate ~`3 x N` rewards per day, every day.
 `app/db/bootstrap.py` reconciles an **existing** database on startup (adds the
 column, widens the uniqueness rule) since the project ships no migration tool.
 
-**Honest limit:** Tier 1 makes farming impractical but is still trust-based —
+**Honest limit:** Tier 1 makes farming impractical but is still trust-based -
 it cannot prove the receipt exists.
 
-## Tier 2 — shipped (receipt proof + admin approval)
+## Tier 2 - shipped (receipt proof + admin approval)
 
 Goal achieved: a reward is now *proven*, not asserted. A volunteer attaches a
 photo/PDF of the receipt, and an admin approves it before any reward is
@@ -46,22 +46,22 @@ credited.
 | Admin review API | `GET /api/v1/admin/transactions/review`, `POST /api/v1/admin/transactions/{id}/approve`, `POST /api/v1/admin/transactions/{id}/reject` | Queue is oldest-first; approve/reject return `TransactionReviewOut` (volunteer, receipt URL, status, reviewer timestamp). |
 | Real-time review | SSE `invoice_reviewed` (in addition to `purchase` on submit) | Open admin tabs refresh the queue immediately. |
 | Review queue UI | `/admin/reviews` (`frontend/src/pages/AdminReviews.tsx`) | Receipt thumbnail → click for the full image, invoice, volunteer, partner, submitted time, Approve / Reject + optional reason. |
-| Volunteer-facing split | `UserProfile.pending_reward_points`, profile page | `reward_points` is the **approved/spendable** balance; "Awaiting review" shows what is queued. Per-row `status`, and the volunteer is told *why* a receipt was rejected (`rejection_reason` on their own history only — never on the public per-business list). |
+| Volunteer-facing split | `UserProfile.pending_reward_points`, profile page | `reward_points` is the **approved/spendable** balance; "Awaiting review" shows what is queued. Per-row `status`, and the volunteer is told *why* a receipt was rejected (`rejection_reason` on their own history only - never on the public per-business list). |
 | Caps cannot be bypassed by queueing | `count_uses_today*` filter on `COUNTED_STATUSES` (`pending`, `approved`) | `pending` submissions consume a daily slot; a `rejected` one does **not** (an honest mistake shouldn't cost a volunteer their quota). |
 | Migration for existing databases | `app/db/bootstrap.py::_ensure_review_columns` | Adds the six columns (guarded), creates the `status`/`receipt_sha256` indexes, and **backfills** every pre-existing row to `approved` with `reviewed_at = created_at`, so no historical reward is lost. |
 | Rollout switch | `core/config.py::REQUIRE_RECEIPT_REVIEW: bool = True` | `False` restores Tier 1 exactly: receipt optional, instant credit. The JSON submit body is still accepted in that mode, so an older client keeps working. |
 
 ### Decisions taken for this tier
 
-1. **Who reviews** — any authenticated admin. There is no separate reviewer
+1. **Who reviews** - any authenticated admin. There is no separate reviewer
    role; every decision is attributable through `reviewed_by` + the audit row.
-2. **SLA / reminders** — none automated in this tier. The queue is oldest-first
+2. **SLA / reminders** - none automated in this tier. The queue is oldest-first
    and the dashboard shows an "Awaiting review" count.
-3. **Re-submission after rejection** — **not allowed for the same invoice
+3. **Re-submission after rejection** - **not allowed for the same invoice
    number**: the Tier 1 `UNIQUE(business_id, invoice_number)` guard stays, which
    is what stops a receipt being recycled. A rejected row also frees its daily
    slot so the volunteer can submit a *different*, correct invoice.
-4. **Telling the volunteer why** — yes, the rejection reason is shown on their
+4. **Telling the volunteer why** - yes, the rejection reason is shown on their
    own history (it is never exposed on the public business history).
 
 ### Acceptance criteria
@@ -80,11 +80,11 @@ photo *and* a matching unused invoice number, once per partner) but a
 determined volunteer can still photograph a genuine receipt and re-type its
 number. Only Tier 3 makes fabrication impossible.
 
-## Tier 3 — shipped (merchant single-use receipt codes)
+## Tier 3 - shipped (merchant single-use receipt codes)
 
 Goal achieved for opted-in partners: a reward is now *authentic*, not merely
 *proven*. An admin issues a batch of codes to a partner, the partner prints one
-on each receipt, and the volunteer quotes it — a fabricated number simply never
+on each receipt, and the volunteer quotes it - a fabricated number simply never
 matches an issued code.
 
 | Control | Where | Effect |
@@ -102,15 +102,15 @@ matches an issued code.
 
 ### Decisions taken for this tier
 
-1. **Who is opted in** — the admin, per partner, via `codes_required`. Tier 3
+1. **Who is opted in** - the admin, per partner, via `codes_required`. Tier 3
    depends on the merchant printing codes, so a global switch would break every
    partner who cannot.
-2. **Code vs invoice number** — the code is an *extra* field, not a replacement.
+2. **Code vs invoice number** - the code is an *extra* field, not a replacement.
    The receipt's invoice number is still recorded, so Tier 1's per-partner
    duplicate guard keeps working alongside the code.
-3. **Rejected submissions** — the code is released, matching the daily-cap rule:
+3. **Rejected submissions** - the code is released, matching the daily-cap rule:
    a blurry photo must not cost the volunteer the only code they have.
-4. **Deleted partners** — `invoice_codes` cascades with the business and
+4. **Deleted partners** - `invoice_codes` cascades with the business and
    `transactions.code_id` is `SET NULL`, so reward history survives.
 
 ### Acceptance criteria
@@ -124,7 +124,7 @@ matches an issued code.
 
 **Honest limit:** Tier 3 makes fabrication impossible *only* while a code is
 single-use and the partner keeps the sheet. A code photographed from an unused
-receipt can still be quoted by someone else — the control bounds each printed
+receipt can still be quoted by someone else - the control bounds each printed
 receipt to one reward, which is the property that matters. A **merchant
 confirmation portal** (partner staff confirm the invoice in the customer's
 presence) would close that last gap, but it needs every partner to log in, so it

@@ -8,7 +8,7 @@ exit codes) without Docker, rclone, or any real object storage.
 
 The behaviours worth locking down are the ones whose failure mode is silence:
 
-* a half-configured off-site run must fail loudly — a missing ``rclone`` or a
+* a half-configured off-site run must fail loudly - a missing ``rclone`` or a
   missing ``OFFSITE_REMOTE`` is how "we have backups" quietly becomes untrue;
 * ``rclone copy`` is used, never ``sync`` (a mirror must not be able to delete
   the remote), and only our own artifact patterns are shipped;
@@ -265,7 +265,7 @@ def test_rclone_oci_example_is_a_valid_single_remote():
     """The file the docs tell operators to install must stay installable.
 
     It is copied verbatim to ``~/.config/rclone/rclone.conf``, so it has to parse
-    and declare **exactly one** ``oci`` remote — uncommenting two of the flavour
+    and declare **exactly one** ``oci`` remote - uncommenting two of the flavour
     examples (or adding a second section) would make rclone reject the file.
     """
     config = configparser.ConfigParser()

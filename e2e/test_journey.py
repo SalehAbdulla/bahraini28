@@ -19,7 +19,7 @@ from playwright.sync_api import Page, expect
 VOLUNTEER_EMAIL = "volunteer@example.com"
 VOLUNTEER_PASSWORD = "volunteer123"
 
-PENDING_MESSAGE = "Submitted — your reward is credited once the receipt is reviewed."
+PENDING_MESSAGE = "Submitted - your reward is credited once the receipt is reviewed."
 
 # A real 1x1 PNG: the receipt thumbnail is served through the authenticated
 # admin route and rendered from a blob URL, so it has to decode for real.
@@ -41,7 +41,7 @@ def _login_as_volunteer(page: Page, app_url: str) -> None:
 def _activate_if_needed(page: Page) -> None:
     """First-login modal: required on accounts with must_change_password=True.
 
-    Waits for the login outcome so we never race the async login request —
+    Waits for the login outcome so we never race the async login request -
     either the modal appears, or the login lands on /profile directly.
     """
     modal = page.locator("div").filter(has_text="Set up your profile").last
@@ -157,7 +157,7 @@ def test_volunteer_journey(browser, app_url: str) -> None:
     row = admin.locator("tr", has_text=invoice)
     expect(row).to_be_visible(timeout=10000)
     # The receipt is private, so the thumbnail is fetched with the admin token
-    # and rendered from a blob URL — assert it actually decoded.
+    # and rendered from a blob URL - assert it actually decoded.
     thumb = row.locator("img")
     expect(thumb).to_be_visible(timeout=10000)
     expect(thumb).to_have_attribute("src", re.compile(r"^blob:"))
@@ -218,7 +218,7 @@ def test_admin_registers_business(browser, app_url: str) -> None:
     expect(page.locator(f"tr:has-text('E2E Store {stamp}') img")).to_be_visible()
 
     # --- a benefit that is not a percentage shows as its label ---------------
-    # Such a partner is stored with 0%, so it must never render a "-0%" badge —
+    # Such a partner is stored with 0%, so it must never render a "-0%" badge -
     # neither in the management table nor on the public card.
     row = page.locator(f"tr:has-text('E2E Store {stamp}')")
     expect(row).to_contain_text("-12%")

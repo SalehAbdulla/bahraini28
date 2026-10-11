@@ -1,4 +1,4 @@
-# Bahraini 28 — Discount Tracking Portal
+# Bahraini 28 - Discount Tracking Portal
 
 **Project Name & Vision**: Bahraini 28 (Discount Tracking Portal for the Bahraini 28 Volunteer Organization). A lightweight, high-performance web platform designed to digitize and track exclusive member discounts at physical merchant locations.
 
@@ -40,33 +40,33 @@ Seamlessly bridges physical retail interactions with digital accountability, ens
 
 ## Project Implementation Todo List
 
-### Phase 1: Project Setup & Database Models — ✅ done
+### Phase 1: Project Setup & Database Models - ✅ done
 - [x] Initialize FastAPI project structure with virtual environment and dependencies (`fastapi`, `uvicorn`, `sqlalchemy`, `pydantic`). Note: **bcrypt** and **PyJWT** were used instead of `passlib[bcrypt]`/`python-jose` (both unmaintained / have CVEs).
 - [x] Configure SQLAlchemy database engine and session management (SQLite for dev, PostgreSQL for prod; `pool_pre_ping`).
 - [x] Build database models: `Admin`, `User` (CPR, email, password_hash, expiry_date, first_login flag, token_version), `Business` (name, CR, logo_path, discount_percentage, expiry_date), `BusinessArea` (relationship table for multi-branch locations), `Transaction` (user_id, business_id, invoice_number, timestamp, reward_increment), plus `Category`, `Area`, `RewardAdjustment` (audit log).
 
-### Phase 2: Authentication, Security & Middleware — ✅ done
+### Phase 2: Authentication, Security & Middleware - ✅ done
 - [x] Implement secure password hashing utility using `bcrypt` (pyca).
 - [x] Create JWT token generation and validation dependencies with single-session tracking (`token_version` check).
 - [x] Build login endpoints for Users (supporting CPR or Email lookup, expiry date validation, and temporary password detection) and Admins.
 - [x] Implement profile-activation middleware/endpoint to force first-time users to update their name, email, and password.
 
-### Phase 3: Admin Dashboard & Management APIs — ✅ done
+### Phase 3: Admin Dashboard & Management APIs - ✅ done
 - [x] Develop Admin user-management endpoints (Add, Modify, Deactivate users, override expiry dates, and manual reward adjustments).
 - [x] Build detailed user analytics query (transaction history, aggregate metrics, most-frequented business).
 - [x] Implement master transaction log endpoint with pagination and real-time notification hooks (SSE admin feed).
 
-### Phase 4: Business Directory & User Interface — ✅ done
+### Phase 4: Business Directory & User Interface - ✅ done
 - [x] Create public landing page, login page (with "Volunteer Members Only" notice), and categorized business directory home page.
 - [x] Build individual business component view displaying logo, discount %, branch areas, and invoice submission form.
 - [x] Develop user profile view featuring member details, reward tracking cards, and transaction history.
 
-### Phase 5: Frontend Polish & Testing — ✅ done
+### Phase 5: Frontend Polish & Testing - ✅ done
 - [x] Style all views using Tailwind CSS for clean, minimalist, mobile-friendly UX.
 - [x] Write integration tests for authentication flows, expiry checks, single-session token invalidation, and invoice reward increments (44 backend tests, SQLite + PostgreSQL via `TEST_DATABASE_URL`).
 - [x] Playwright E2E suite under `e2e/`: volunteer journey (login → first-login modal → directory → invoice → profile reward) and admin dashboard SSE live feed.
 
-### Phase 6: Anti-fraud hardening — ✅ done
+### Phase 6: Anti-fraud hardening - ✅ done
 - [x] **Tier 1** (see `docs/ANTI_FRAUD_PLAN.md`): per-partner `invoice_pattern`
       regex + global fallback, global duplicate guard
       `UNIQUE(business_id, invoice_number)`, per-business and total daily caps,
@@ -96,7 +96,7 @@ Seamlessly bridges physical retail interactions with digital accountability, ens
       databases. The `/admin/businesses/{id}/codes` page is covered by the
       `e2e/test_layout.py` gutter guard.
 
-### Phase 7: Member-only benefit reveal — ✅ done
+### Phase 7: Member-only benefit reveal - ✅ done
 - [x] The directory (partner name, logo, category, areas) stays public, but the
       exact **discount is withheld from anonymous callers**: `GET
       /api/v1/businesses` and `/{id}` blank `discount_percentage` /
@@ -121,7 +121,7 @@ Seamlessly bridges physical retail interactions with digital accountability, ens
 
 ## Domain
 
-**bahraini28.com** — purchased via Namecheap.
+**bahraini28.com** - purchased via Namecheap.
 
 ---
 
@@ -152,7 +152,7 @@ The directory's area filter and merchant categories are data-driven rather than
 hard-coded, and administrators manage them from the control center:
 
 - [x] Bundle the organization's official Bahrain area list
-  (`backend/data/bahrain_areas.csv` — 164 distinct areas across 4
+  (`backend/data/bahrain_areas.csv` - 164 distinct areas across 4
   governorates, derived from the provided address dataset) and import it
   idempotently via `backend/scripts/seed_areas.py`.
 - [x] Admin API + UI (`/admin/catalog`) to add, rename, activate/deactivate and
@@ -172,7 +172,7 @@ each partner's logo from the A3 poster deck (`PS A3.pdf`) that goes with it:
   Ghostscript, cropped to the logo plate, trimmed of its page margin and capped
   at 512 px. They live in `backend/scripts/assets/business_logos/<slug>.png`
   rather than `backend/data/`, because `data/` is **not** copied into the backend
-  image while `scripts/` is — so the same command seeds the server.
+  image while `scripts/` is - so the same command seeds the server.
 - [x] `backend/scripts/seed_partners.py` creates the partners idempotently
   (matched on name, existing rows untouched), each with its category, discount
   and the benefit text printed on the card, then copies the logo into
@@ -202,22 +202,22 @@ each partner's logo from the A3 poster deck (`PS A3.pdf`) that goes with it:
 The look follows the organization's official deck (`docs/Bahraini 28 3.pdf`
 plus `docs/Fonts.zip`). Those originals are ~37 MB and **git-ignored**, so
 everything the app actually serves is derived once from the deck and committed
-under `frontend/public/` — no build step depends on the originals.
+under `frontend/public/` - no build step depends on the originals.
 
 - **Palette** sampled straight from the deck: brand green **`#6db193`**
   (identical on pages 3-5 and 8-9), paper cream `#fff8e4`, ink `#1a1a1a`,
   brush grey `#878787`. Wired into `frontend/tailwind.config.js`, which also
-  defines `brand-700` (`#447f66`) because `#6db193` on white is only ~2.3:1 —
+  defines `brand-700` (`#447f66`) because `#6db193` on white is only ~2.3:1 -
   solid buttons and links use `brand-700` to stay WCAG AA.
 - **Script face**: `HOOKER.otf` from `Fonts.zip` is self-hosted at
   `frontend/public/brand/fonts/HOOKER.otf` as `font-script`, used only as a
   display accent ("Hello Bahrainies!", "Soon!", step numerals, the footer
-  wordmark). Body copy stays on the system sans stack — no webfont download.
+  wordmark). Body copy stays on the system sans stack - no webfont download.
 - **Textures**: `texture-cream.jpg` (page 4 band), `texture-mint.jpg` (page 7),
-  `texture-ink.jpg` (page 5) — logo-free watercolour bands used as section
+  `texture-ink.jpg` (page 5) - logo-free watercolour bands used as section
   washes via the `bg-texture-*` utilities.
 - **Logo & badge**: `brand/logo-sm.png` (431×240) is the one the UI actually
-  loads — it is the header mark and both landing-page marks; `brand/logo.png`
+  loads - it is the header mark and both landing-page marks; `brand/logo.png`
   (862×480) is kept as the high-resolution master (the deck it is cut from is
   git-ignored, so the repo must hold the best copy). `brand/badge.png` (768 px,
   hero) and `brand/badge-sm.png` (160 px, 44 px footer slot) are the same cream
@@ -275,7 +275,7 @@ cp HOOKER.otf $OUT/fonts/HOOKER.otf
 
 Two traps worth remembering when adjusting this: always keep the `-alpha remove`
 step on the textures, and never write a 16-bit render straight to PNG for the
-web — quantising *without* forcing `-depth 8` leaves a low-colour file that
+web - quantising *without* forcing `-depth 8` leaves a low-colour file that
 still costs six bytes a pixel. Sanity checks after a rebuild:
 
 ```bash
@@ -291,11 +291,11 @@ magick $OUT/badge.png   -format '%[channels]\n' info:              # expect "srg
 Target: **Oracle Cloud Always Free** (Ampere A1 ARM, Ubuntu 24.04, ≥2 GB RAM)
 or any Docker host. Full artifacts in `deploy/`, run guide in `README.md`:
 
-- `deploy/docker-compose.yml` — PostgreSQL 17 (named volume `pgdata`),
+- `deploy/docker-compose.yml` - PostgreSQL 17 (named volume `pgdata`),
   FastAPI backend (uploads volume, single uvicorn worker for the in-process
   SSE bus), one-shot frontend builder, **Caddy** (auto-renewing TLS, serves
   SPA, proxies `/api`, `/uploads`, `/health`).
-- **Co-hosting** — run this stack as a *tenant* behind another reverse proxy
+- **Co-hosting** - run this stack as a *tenant* behind another reverse proxy
   that already owns `:80`/`:443` (e.g. beyond's nginx on a shared VPS):
   `deploy/docker-compose.cohost.yml` (no host ports; Caddy joins `beyond-prod`
   as `bahraini28-web`; log caps + memory limits on every service),
@@ -305,17 +305,17 @@ or any Docker host. Full artifacts in `deploy/`, run guide in `README.md`:
   reloads it). Set `BAHRAINI28_COMPOSE=deploy/docker-compose.cohost.yml` so
   `backup.sh`/`restore.sh` address the right stack. See the README's
   "Co-hosting on a shared VPS" section.
-- `deploy/deploy.sh` — one-command deploy + smoke path; `backup.sh` +
+- `deploy/deploy.sh` - one-command deploy + smoke path; `backup.sh` +
   `offsite-backup.sh` (rclone → object storage, config `deploy/offsite.env` and
   the Oracle Object Storage free-tier remote in `deploy/rclone-oci.conf.example`) /
-  `restore.sh` (restores the dump **and** the uploads archive) — daily `pg_dump`
+  `restore.sh` (restores the dump **and** the uploads archive) - daily `pg_dump`
   + uploads archive with 14-day local retention.
-- `deploy/.env.production.example` — production env template (DB credentials,
-  secret keys, CORS for https://bahraini28.com). `backend/.env.example` — local.
+- `deploy/.env.production.example` - production env template (DB credentials,
+  secret keys, CORS for https://bahraini28.com). `backend/.env.example` - local.
 - CI (`.github/workflows/ci.yml`) runs the backend suite on SQLite **and**
   PostgreSQL 17, the frontend build, and the Playwright e2e suite
   (`e2e/requirements.txt` declares its deps).
-- `backend/scripts/migrate_sqlite_to_postgres.py` — idempotent data migration.
+- `backend/scripts/migrate_sqlite_to_postgres.py` - idempotent data migration.
 - DNS (Namecheap): `A @` and `A www` → VPS IP; CAA `0 issue "letsencrypt.org"`.
 
 **Remaining operational checklist (after the VPS + DNS are live):**

@@ -2,9 +2,9 @@
 
 Sources (both kept out of git history; see the ``data/`` directory):
 
-* ``elite card.xlsx`` — the volunteer-discount sheet: project name, Instagram
+* ``elite card.xlsx`` - the volunteer-discount sheet: project name, Instagram
   handle and the benefit each partner grants Bahraini 28 volunteers.
-* ``PS A3.pdf`` — the A3 poster deck, one page per partner. The deck order is
+* ``PS A3.pdf`` - the A3 poster deck, one page per partner. The deck order is
   **not** the sheet order, so every logo in ``assets/business_logos/`` was
   matched to its partner by the artwork on that page (the page each partner was
   found on is recorded inline in ``PARTNERS``, which itself follows the sheet).
@@ -20,8 +20,8 @@ wins), and a logo is attached only while the partner still has no
 ``discount_label``, so re-running after an upgrade backfills the partners whose
 benefit is not a percentage and leaves an admin's own wording alone.
 
-The logo PNGs live next to this script — ``backend/scripts`` is copied into the
-production image — so the same command works on the server:
+The logo PNGs live next to this script - ``backend/scripts`` is copied into the
+production image - so the same command works on the server:
 
     docker compose -f deploy/docker-compose.yml run --rm backend \
         python scripts/seed_partners.py
@@ -78,7 +78,7 @@ class Partner:
     #: Category slug declared in ``CATEGORIES``.
     category: str
     #: Whole-number discount shown in the directory badge. ``0`` means the
-    #: benefit is not a flat percentage — ``offer`` spells out what it is and
+    #: benefit is not a flat percentage - ``offer`` spells out what it is and
     #: ``label`` carries the short headline the directory prints instead of a
     #: nonsensical "-0%".
     discount: int
@@ -204,7 +204,7 @@ def seed() -> None:
     Base.metadata.create_all(bind=engine)
     # ``create_all`` builds a missing *table* but never alters an existing one,
     # so a database created before ``businesses.discount_label`` existed needs
-    # the additive migration first — the app applies it on boot, but this script
+    # the additive migration first - the app applies it on boot, but this script
     # runs before the server does under ``run.sh --partners``.
     reconcile_schema(engine)
 
@@ -246,7 +246,7 @@ def seed() -> None:
                     business.discount_label = partner.label
                     labels_filled += 1
 
-            # A logo already on file belongs to an admin edit — leave it alone.
+            # A logo already on file belongs to an admin edit - leave it alone.
             if business.logo_path:
                 continue
             if _attach_logo(business, partner, upload_dir):
@@ -273,7 +273,7 @@ def seed() -> None:
         print("New partners (benefit / category / handle):")
         for name, discount, label, category, handle in created_summary:
             benefit = f"-{discount}%" if discount else (label or "special offer")
-            print(f"  {name}  ·  {benefit}  ·  {category}  ·  @{handle or '—'}")
+            print(f"  {name}  ·  {benefit}  ·  {category}  ·  @{handle or '-'}")
     print("Still to fill in from the admin UI:")
     print("  - commercial registration (every row starts as PENDING-<slug>)")
     print("  - branches/areas (the elite card lists no addresses)")

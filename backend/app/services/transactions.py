@@ -1,21 +1,21 @@
-"""Transaction service — invoice submission, anti-fraud gates and review.
+"""Transaction service - invoice submission, anti-fraud gates and review.
 
 Layered defence (Tier 1):
 
-1. **Format gate** — the invoice must match the partner's ``invoice_pattern``
+1. **Format gate** - the invoice must match the partner's ``invoice_pattern``
    (or the global fallback). Rejects junk like ``"1"`` or ``"!!!"``.
-2. **Global duplicate guard** — an invoice can be credited only once per
+2. **Global duplicate guard** - an invoice can be credited only once per
    business, *by anyone*, so a receipt cannot be shared between accounts.
-3. **Per-business daily limit** — ``DAILY_LIMIT_PER_BUSINESS`` uses today.
-4. **Total daily limit** — ``DAILY_LIMIT_TOTAL`` across every partner, so a
+3. **Per-business daily limit** - ``DAILY_LIMIT_PER_BUSINESS`` uses today.
+4. **Total daily limit** - ``DAILY_LIMIT_TOTAL`` across every partner, so a
    single account cannot farm 3 x N fabricated invoices across the directory.
 
 Tier 2 adds *proof* on top of that hardening:
 
-5. **Receipt evidence** — the volunteer uploads a receipt image/PDF; its
+5. **Receipt evidence** - the volunteer uploads a receipt image/PDF; its
    SHA-256 is stored so the *same photo* cannot credit two invoices at the same
    partner.
-6. **Admin approval** — a submission is created as ``pending`` and **does not
+6. **Admin approval** - a submission is created as ``pending`` and **does not
    touch ``reward_points``**. Only :func:`approve_transaction` credits a reward
    (and writes a :class:`~app.models.reward_adjustment.RewardAdjustment` audit
    row); :func:`reject_transaction` leaves the counter alone. The single
@@ -31,7 +31,7 @@ do not (an honest mistake should not cost a volunteer their quota).
 
 Tier 3 adds *proof of authenticity* for partners who opt in:
 
-7. **Single-use receipt code** — a partner with ``codes_required`` only accepts
+7. **Single-use receipt code** - a partner with ``codes_required`` only accepts
    a submission that quotes an unused code an admin issued to that partner, so a
    fabricated number never matches. The code is ``claimed`` on submission,
    ``redeemed`` on approval, and released back to ``issued`` on rejection.
@@ -83,7 +83,7 @@ def start_of_calendar_day(tz_name: str | None = None, reference: datetime | None
 def count_uses_today(db: Session, user_id: int, business_id: int) -> int:
     """Number of successful uses by ``user_id`` at ``business_id`` today.
 
-    Counts ``pending`` submissions too — otherwise a volunteer could queue
+    Counts ``pending`` submissions too - otherwise a volunteer could queue
     unlimited invoices and only later have them approved, bypassing the cap.
     """
     start = start_of_calendar_day()
@@ -125,7 +125,7 @@ def count_distinct_businesses_today(db: Session, user_id: int) -> int:
 def pending_rewards(db: Session, user_id: int) -> int:
     """Reward points sitting in the review queue for ``user_id``.
 
-    These are *not* spendable — they only become ``user.reward_points`` once an
+    These are *not* spendable - they only become ``user.reward_points`` once an
     admin approves them.
     """
     stmt = select(func.coalesce(func.sum(Transaction.reward_increment), 0)).where(
@@ -183,7 +183,7 @@ def submit_invoice(
     """Create a transaction for a verified invoice, enforcing every gate.
 
     With ``requires_receipt=True`` (Tier 2, the default) the row lands as
-    ``pending`` and **no reward is credited** — that happens in
+    ``pending`` and **no reward is credited** - that happens in
     :func:`approve_transaction` once an admin has seen the receipt. With
     ``requires_receipt=False`` (the documented Tier-1 fallback, driven by
     ``REQUIRE_RECEIPT_REVIEW``) the row is written straight to ``approved`` and
@@ -309,7 +309,7 @@ def approve_transaction(
         )
 
     user = db.get(User, transaction.user_id)
-    if user is None:  # pragma: no cover — the FK guarantees it
+    if user is None:  # pragma: no cover - the FK guarantees it
         raise TransactionNotFoundError("The submitting volunteer no longer exists.")
 
     transaction.status = STATUS_APPROVED

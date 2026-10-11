@@ -219,7 +219,7 @@ def test_admin_can_set_and_clear_a_benefit_label(client, db):
     """A benefit that is not a flat rate is carried by ``discount_label``.
 
     The label is the one optional field an admin must be able to remove again
-    (blank the input), so an explicit null has to clear it — while a partial
+    (blank the input), so an explicit null has to clear it - while a partial
     update that never mentions the field must leave it alone.
     """
     category_id = make_business(db, cr="CR-LABEL").category_id

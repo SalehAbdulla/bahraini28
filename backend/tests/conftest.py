@@ -6,8 +6,8 @@ automatically, so no committed state can leak between tests.
 
 Set ``TEST_DATABASE_URL`` to re-run the same suite against a *persistent*
 database (a file locally, PostgreSQL in CI). That database is shared by the
-whole session, so the ``app`` fixture resets the schema before every test —
-see ``reset_schema`` — to give the persistent run the same clean slate the
+whole session, so the ``app`` fixture resets the schema before every test -
+see ``reset_schema`` - to give the persistent run the same clean slate the
 in-memory run gets for free.
 """
 from __future__ import annotations
@@ -85,7 +85,7 @@ def reset_schema(application) -> None:
     always relied on each test seeing an empty database. When
     ``TEST_DATABASE_URL`` points at a *persistent* database (a file locally,
     PostgreSQL in CI) that database is instead shared by the whole session and
-    any committed state — a rotated admin password, a seeded business — leaks
+    any committed state - a rotated admin password, a seeded business - leaks
     into the next test. Drop the schema so the startup hook recreates the tables
     and re-seeds the bootstrap admin, giving the persistent run the same clean
     slate the in-memory run assumes.

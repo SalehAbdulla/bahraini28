@@ -59,8 +59,8 @@ export default function BusinessDetail() {
     setResult(null);
     setBusy(true);
     try {
-      // Downscale the photo in the browser first — a phone JPEG is routinely
-      // 3-5 MB, far more than a legible receipt needs — then post it multipart
+      // Downscale the photo in the browser first - a phone JPEG is routinely
+      // 3-5 MB, far more than a legible receipt needs - then post it multipart
       // with the invoice fields. The reward is credited only after an admin has
       // reviewed the receipt.
       const upload = await prepareReceipt(receipt);
@@ -172,7 +172,7 @@ export default function BusinessDetail() {
             {business.areas.map((a) => (
               <li key={a.id}>
                 📍 {a.area_name}
-                {a.branch_name ? ` — ${a.branch_name}` : ""}
+                {a.branch_name ? ` - ${a.branch_name}` : ""}
               </li>
             ))}
           </ul>
@@ -187,7 +187,7 @@ export default function BusinessDetail() {
           daily cap per partner and overall (resets at midnight), and your reward
           is credited once the receipt has been reviewed.
           {business.codes_required &&
-            " This partner prints a single-use code on each receipt — enter it below."}
+            " This partner prints a single-use code on each receipt - enter it below."}
         </p>
         <form onSubmit={submitInvoice} className="mt-4 space-y-3">
           {business.codes_required && (
@@ -244,7 +244,7 @@ export default function BusinessDetail() {
           <div className="mt-3 text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-lg px-3 py-2 text-sm">
             {result.status === "approved"
               ? `✅ Invoice verified! +${result.reward_increment} reward · `
-              : "🧾 Submitted — your reward is credited once the receipt is reviewed. · "}
+              : "🧾 Submitted - your reward is credited once the receipt is reviewed. · "}
             {result.remaining_today} uses left today here ·{" "}
             {result.remaining_today_total} left today overall.
           </div>
@@ -291,7 +291,7 @@ export default function BusinessDetail() {
 }
 
 export function fmtDate(iso: string | null): string {
-  if (!iso) return "—";
+  if (!iso) return "-";
   return new Date(iso).toLocaleString(undefined, {
     dateStyle: "medium",
     timeStyle: "short",
@@ -299,6 +299,6 @@ export function fmtDate(iso: string | null): string {
 }
 
 export function fmtDateOnly(iso: string | null): string {
-  if (!iso) return "—";
+  if (!iso) return "-";
   return new Date(iso).toLocaleDateString(undefined, { dateStyle: "medium" });
 }
